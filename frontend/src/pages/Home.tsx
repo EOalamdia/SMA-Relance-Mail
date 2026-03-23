@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { ArrowRight, Layers3, Rocket, Shield } from "lucide-react"
+import { ArrowRight, BarChart3, Bell, GraduationCap } from "lucide-react"
 
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
@@ -9,11 +9,11 @@ export default function HomePage() {
   return (
     <div className="space-y-6">
       <header className="space-y-3">
-        <Badge variant="gradient">Starter Frontend Shell</Badge>
-        <h1 className="text-3xl font-bold tracking-tight">Base applicative prete a reutiliser</h1>
+        <Badge variant="gradient">SMA – Système de Management Automatique</Badge>
+        <h1 className="text-3xl font-bold tracking-tight">Gestion des relances de formations</h1>
         <p className="max-w-3xl text-muted-foreground">
-          Ce shell fournit une navigation laterale, des sous-pages, une structure de modules et un socle UI aligne
-          avec le Style-Guide du hub.
+          Pilotez les échéances de formation de vos organismes, configurez les règles de relance,
+          et suivez l'envoi automatique des notifications par email.
         </p>
       </header>
 
@@ -21,49 +21,49 @@ export default function HomePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Rocket className="h-5 w-5 text-primary" />
-              Demarrage rapide
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Tableau de bord
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Ajoute des pages metier dans `src/pages` puis les routes dans `src/App.tsx`.</p>
+            <p className="text-sm text-muted-foreground">Vue synthétique des échéances, retards et relances en attente.</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Layers3 className="h-5 w-5 text-primary" />
-              Modules clairs
+              <GraduationCap className="h-5 w-5 text-primary" />
+              Formations
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Organise chaque domaine dans `features/*` cote backend et une page frontend dediee.</p>
+            <p className="text-sm text-muted-foreground">Gérez le catalogue, les applicabilités et les sessions de formation.</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Shield className="h-5 w-5 text-primary" />
-              Securite by default
+              <Bell className="h-5 w-5 text-primary" />
+              Relances automatiques
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Les appels API conservent cookies + CSRF, et les endpoints debug restent dev-only.</p>
+            <p className="text-sm text-muted-foreground">Configurez les règles, templates et suivez les envois d'emails.</p>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-primary/20">
         <CardHeader>
-          <CardTitle>Prochaine etape</CardTitle>
-          <CardDescription>Configure le menu lateral et ajoute tes sous-pages metier.</CardDescription>
+          <CardTitle>Commencer</CardTitle>
+          <CardDescription>Accédez au tableau de bord pour une vue d'ensemble de vos échéances.</CardDescription>
         </CardHeader>
         <CardContent>
           <Button asChild>
-            <Link to="/modules">
-              Ouvrir la structure modules
+            <Link to="/dashboard">
+              Ouvrir le tableau de bord
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>

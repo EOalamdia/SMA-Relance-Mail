@@ -1,0 +1,1 @@
+"""Organization types feature."""

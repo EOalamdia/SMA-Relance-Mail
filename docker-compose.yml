@@ -43,6 +43,11 @@ services:
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-}
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
     networks:
       - hub_almadia_network
@@ -129,4 +134,25 @@ services:
       - "traefik.http.routers.${APP_SLUG}-pwa.service=${APP_SLUG}-frontend"
 
       - "traefik.http.services.${APP_SLUG}-frontend.loadbalancer.server.port=80"
+    restart: unless-stopped
+
+  sma-scheduler:
+    build:
+      context: ./scheduler
+      dockerfile: Dockerfile
+    image: ${APP_SLUG}_scheduler
+    container_name: ${APP_SLUG}-scheduler
+    environment:
+      - BACKEND_URL=http://${APP_SLUG}-backend:8000
+      - SCHEDULER_KEY=${SCHEDULER_KEY:-}
+    depends_on:
+      app-starter-backend:
+        condition: service_healthy
+    networks:
+      - hub_almadia_network
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped

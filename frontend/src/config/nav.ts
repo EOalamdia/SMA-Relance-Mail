@@ -1,51 +1,52 @@
-import { Database, Home, Layers3, Settings2, Wrench } from "lucide-react"
+import {
+  BarChart3, Building2, CalendarDays, GraduationCap, Home, Link2,
+  Mail, MailCheck, Bell, Send, Tags, Target, Upload, Users,
+} from "lucide-react"
 
 import type { NavSection } from "@ui-shell/types/nav"
 
 export type { NavItem, NavSection } from "@ui-shell/types/nav"
 
-export function buildNavConfig(isDev: boolean): NavSection[] {
-  const sections: NavSection[] = [
+export function buildNavConfig(_isDev: boolean): NavSection[] {
+  return [
     {
-      title: "Workspace",
+      title: "Accueil",
       items: [
-        {
-          title: "Accueil",
-          href: "/",
-          icon: Home,
-        },
-        {
-          title: "Modules",
-          href: "/modules",
-          icon: Layers3,
-        },
-        {
-          // PLACEHOLDER: renommer title et href selon le domaine metier cible
-          title: "Items (demo)",
-          href: "/items",
-          icon: Database,
-        },
-        {
-          title: "Parametres",
-          href: "/settings",
-          icon: Settings2,
-        },
+        { title: "Accueil", href: "/", icon: Home },
+        { title: "Tableau de bord", href: "/dashboard", icon: BarChart3 },
+      ],
+    },
+    {
+      title: "Referentiels",
+      items: [
+        { title: "Types d'organismes", href: "/organization-types", icon: Tags },
+        { title: "Organismes", href: "/organizations", icon: Building2 },
+        { title: "Contacts", href: "/contacts", icon: Users },
+      ],
+    },
+    {
+      title: "Formation",
+      items: [
+        { title: "Catalogue", href: "/training-courses", icon: GraduationCap },
+        { title: "Applicabilité", href: "/course-applicability", icon: Link2 },
+        { title: "Sessions", href: "/training-sessions", icon: CalendarDays },
+        { title: "Echeances", href: "/due-items", icon: Target },
+      ],
+    },
+    {
+      title: "Relances",
+      items: [
+        { title: "Jobs de relance", href: "/reminder-jobs", icon: Send },
+        { title: "Historique envois", href: "/email-deliveries", icon: MailCheck },
+      ],
+    },
+    {
+      title: "Parametrage",
+      items: [
+        { title: "Règles de relance", href: "/reminder-rules", icon: Bell },
+        { title: "Templates email", href: "/email-templates", icon: Mail },
+        { title: "Import CSV", href: "/import", icon: Upload },
       ],
     },
   ]
-
-  if (isDev) {
-    sections.push({
-      title: "Development",
-      items: [
-        {
-          title: "Dev Tools",
-          href: "/dev-tools",
-          icon: Wrench,
-        },
-      ],
-    })
-  }
-
-  return sections
 }

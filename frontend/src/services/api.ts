@@ -1,3 +1,18 @@
+import type {
+  OrganizationType, OrganizationTypeCreate, OrganizationTypeUpdate,
+  Organization, OrganizationCreate, OrganizationUpdate,
+  Contact, ContactCreate, ContactUpdate,
+  TrainingCourse, TrainingCourseCreate, TrainingCourseUpdate,
+  CourseApplicability, CourseApplicabilityCreate,
+  TrainingSession, TrainingSessionCreate, TrainingSessionUpdate,
+  DueItem,
+  ReminderRule, ReminderRuleCreate, ReminderRuleUpdate,
+  EmailTemplate, EmailTemplateCreate, EmailTemplateUpdate,
+  ReminderJob, EmailDelivery,
+  DashboardSummary, DueRadarRow, CoverageRow, UpcomingReminderRow, OverdueRow,
+  ListResponse, ImportResult,
+} from "../types/sma"
+
 const API_BASE_URL = import.meta.env.VITE_API_URL
 
 if (!API_BASE_URL) {
@@ -186,66 +201,341 @@ export const starterApi = {
 }
 
 // ---------------------------------------------------------------------------
-// Items API — demo CRUD (schema app_starter)
-// PLACEHOLDER: renommer itemsApi et adapter les types au domaine metier cible
+// SMA – Organization Types
 // ---------------------------------------------------------------------------
 
-export type ItemOut = {
-  id: string
-  name: string
-  description: string | null
-  // PLACEHOLDER: typer metadata selon le schema defini dans le backend
-  metadata: Record<string, unknown>
-  created_at: string
-  updated_at: string
-}
-
-export type ItemsListResponse = {
-  items: ItemOut[]
-  count: number
-}
-
-export type ItemCreate = {
-  name: string
-  description?: string | null
-  metadata?: Record<string, unknown>
-}
-
-export type ItemUpdate = {
-  name?: string
-  description?: string | null
-  metadata?: Record<string, unknown>
-}
-
-export const itemsApi = {
-  /** Recupere la liste complete des items. */
-  list(): Promise<ItemsListResponse> {
-    return apiRequest<ItemsListResponse>("/v1/items")
+export const organizationTypesApi = {
+  list(): Promise<ListResponse<OrganizationType>> {
+    return apiRequest<ListResponse<OrganizationType>>("/v1/organization-types")
   },
-
-  /** Recupere un item par son UUID. */
-  get(id: string): Promise<ItemOut> {
-    return apiRequest<ItemOut>(`/v1/items/${id}`)
+  get(id: string): Promise<OrganizationType> {
+    return apiRequest<OrganizationType>(`/v1/organization-types/${id}`)
   },
-
-  /** Cree un nouvel item. */
-  create(data: ItemCreate): Promise<ItemOut> {
-    return apiRequest<ItemOut>("/v1/items", {
+  create(data: OrganizationTypeCreate): Promise<OrganizationType> {
+    return apiRequest<OrganizationType>("/v1/organization-types", {
       method: "POST",
       body: JSON.stringify(data),
     })
   },
-
-  /** Met a jour partiellement un item. */
-  update(id: string, data: ItemUpdate): Promise<ItemOut> {
-    return apiRequest<ItemOut>(`/v1/items/${id}`, {
+  update(id: string, data: OrganizationTypeUpdate): Promise<OrganizationType> {
+    return apiRequest<OrganizationType>(`/v1/organization-types/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     })
   },
+  archive(id: string): Promise<void> {
+    return apiRequest<void>(`/v1/organization-types/${id}`, { method: "DELETE" })
+  },
+}
 
-  /** Supprime un item (retourne void). */
+// ---------------------------------------------------------------------------
+// SMA – Organizations
+// ---------------------------------------------------------------------------
+
+export const organizationsApi = {
+  list(typeId?: string): Promise<ListResponse<Organization>> {
+    const qs = typeId ? `?type_id=${typeId}` : ""
+    return apiRequest<ListResponse<Organization>>(`/v1/organizations${qs}`)
+  },
+  get(id: string): Promise<Organization> {
+    return apiRequest<Organization>(`/v1/organizations/${id}`)
+  },
+  create(data: OrganizationCreate): Promise<Organization> {
+    return apiRequest<Organization>("/v1/organizations", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  },
+  update(id: string, data: OrganizationUpdate): Promise<Organization> {
+    return apiRequest<Organization>(`/v1/organizations/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    })
+  },
+  archive(id: string): Promise<void> {
+    return apiRequest<void>(`/v1/organizations/${id}`, { method: "DELETE" })
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Contacts
+// ---------------------------------------------------------------------------
+
+export const contactsApi = {
+  list(orgId?: string): Promise<ListResponse<Contact>> {
+    const qs = orgId ? `?organization_id=${orgId}` : ""
+    return apiRequest<ListResponse<Contact>>(`/v1/contacts${qs}`)
+  },
+  get(id: string): Promise<Contact> {
+    return apiRequest<Contact>(`/v1/contacts/${id}`)
+  },
+  create(data: ContactCreate): Promise<Contact> {
+    return apiRequest<Contact>("/v1/contacts", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  },
+  update(id: string, data: ContactUpdate): Promise<Contact> {
+    return apiRequest<Contact>(`/v1/contacts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    })
+  },
   remove(id: string): Promise<void> {
-    return apiRequest<void>(`/v1/items/${id}`, { method: "DELETE" })
+    return apiRequest<void>(`/v1/contacts/${id}`, { method: "DELETE" })
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Training Courses
+// ---------------------------------------------------------------------------
+
+export const trainingCoursesApi = {
+  list(): Promise<ListResponse<TrainingCourse>> {
+    return apiRequest<ListResponse<TrainingCourse>>("/v1/training-courses")
+  },
+  get(id: string): Promise<TrainingCourse> {
+    return apiRequest<TrainingCourse>(`/v1/training-courses/${id}`)
+  },
+  create(data: TrainingCourseCreate): Promise<TrainingCourse> {
+    return apiRequest<TrainingCourse>("/v1/training-courses", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  },
+  update(id: string, data: TrainingCourseUpdate): Promise<TrainingCourse> {
+    return apiRequest<TrainingCourse>(`/v1/training-courses/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    })
+  },
+  archive(id: string): Promise<void> {
+    return apiRequest<void>(`/v1/training-courses/${id}`, { method: "DELETE" })
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Course Applicability
+// ---------------------------------------------------------------------------
+
+export const courseApplicabilityApi = {
+  list(orgId?: string, courseId?: string): Promise<ListResponse<CourseApplicability>> {
+    const params = new URLSearchParams()
+    if (orgId) params.set("organization_id", orgId)
+    if (courseId) params.set("course_id", courseId)
+    const qs = params.toString() ? `?${params}` : ""
+    return apiRequest<ListResponse<CourseApplicability>>(`/v1/course-applicability${qs}`)
+  },
+  create(data: CourseApplicabilityCreate): Promise<CourseApplicability> {
+    return apiRequest<CourseApplicability>("/v1/course-applicability", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  },
+  remove(id: string): Promise<void> {
+    return apiRequest<void>(`/v1/course-applicability/${id}`, { method: "DELETE" })
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Training Sessions
+// ---------------------------------------------------------------------------
+
+export const trainingSessionsApi = {
+  list(orgId?: string, courseId?: string): Promise<ListResponse<TrainingSession>> {
+    const params = new URLSearchParams()
+    if (orgId) params.set("organization_id", orgId)
+    if (courseId) params.set("course_id", courseId)
+    const qs = params.toString() ? `?${params}` : ""
+    return apiRequest<ListResponse<TrainingSession>>(`/v1/training-sessions${qs}`)
+  },
+  get(id: string): Promise<TrainingSession> {
+    return apiRequest<TrainingSession>(`/v1/training-sessions/${id}`)
+  },
+  create(data: TrainingSessionCreate): Promise<TrainingSession> {
+    return apiRequest<TrainingSession>("/v1/training-sessions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  },
+  update(id: string, data: TrainingSessionUpdate): Promise<TrainingSession> {
+    return apiRequest<TrainingSession>(`/v1/training-sessions/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    })
+  },
+  remove(id: string): Promise<void> {
+    return apiRequest<void>(`/v1/training-sessions/${id}`, { method: "DELETE" })
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Due Items
+// ---------------------------------------------------------------------------
+
+export const dueItemsApi = {
+  list(status?: string): Promise<ListResponse<DueItem>> {
+    const qs = status ? `?status=${status}` : ""
+    return apiRequest<ListResponse<DueItem>>(`/v1/due-items${qs}`)
+  },
+  get(id: string): Promise<DueItem> {
+    return apiRequest<DueItem>(`/v1/due-items/${id}`)
+  },
+  compute(): Promise<{ computed: number }> {
+    return apiRequest<{ computed: number }>("/v1/due-items/compute", { method: "POST" })
+  },
+  close(id: string): Promise<DueItem> {
+    return apiRequest<DueItem>(`/v1/due-items/${id}/close`, { method: "POST" })
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Reminder Rules
+// ---------------------------------------------------------------------------
+
+export const reminderRulesApi = {
+  list(): Promise<ListResponse<ReminderRule>> {
+    return apiRequest<ListResponse<ReminderRule>>("/v1/reminder-rules")
+  },
+  get(id: string): Promise<ReminderRule> {
+    return apiRequest<ReminderRule>(`/v1/reminder-rules/${id}`)
+  },
+  create(data: ReminderRuleCreate): Promise<ReminderRule> {
+    return apiRequest<ReminderRule>("/v1/reminder-rules", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  },
+  update(id: string, data: ReminderRuleUpdate): Promise<ReminderRule> {
+    return apiRequest<ReminderRule>(`/v1/reminder-rules/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    })
+  },
+  archive(id: string): Promise<void> {
+    return apiRequest<void>(`/v1/reminder-rules/${id}`, { method: "DELETE" })
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Email Templates
+// ---------------------------------------------------------------------------
+
+export const emailTemplatesApi = {
+  list(): Promise<ListResponse<EmailTemplate>> {
+    return apiRequest<ListResponse<EmailTemplate>>("/v1/email-templates")
+  },
+  get(id: string): Promise<EmailTemplate> {
+    return apiRequest<EmailTemplate>(`/v1/email-templates/${id}`)
+  },
+  create(data: EmailTemplateCreate): Promise<EmailTemplate> {
+    return apiRequest<EmailTemplate>("/v1/email-templates", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  },
+  update(id: string, data: EmailTemplateUpdate): Promise<EmailTemplate> {
+    return apiRequest<EmailTemplate>(`/v1/email-templates/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    })
+  },
+  archive(id: string): Promise<void> {
+    return apiRequest<void>(`/v1/email-templates/${id}`, { method: "DELETE" })
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Reminder Jobs
+// ---------------------------------------------------------------------------
+
+export const reminderJobsApi = {
+  list(status?: string): Promise<ListResponse<ReminderJob>> {
+    const qs = status ? `?status=${status}` : ""
+    return apiRequest<ListResponse<ReminderJob>>(`/v1/reminder-jobs${qs}`)
+  },
+  get(id: string): Promise<ReminderJob> {
+    return apiRequest<ReminderJob>(`/v1/reminder-jobs/${id}`)
+  },
+  generate(): Promise<{ generated: number }> {
+    return apiRequest<{ generated: number }>("/v1/reminder-jobs/generate", { method: "POST" })
+  },
+  sendPending(): Promise<{ sent: number; failed: number }> {
+    return apiRequest<{ sent: number; failed: number }>("/v1/reminder-jobs/send-pending", { method: "POST" })
+  },
+  cancel(id: string): Promise<ReminderJob> {
+    return apiRequest<ReminderJob>(`/v1/reminder-jobs/${id}/cancel`, { method: "POST" })
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Email Deliveries
+// ---------------------------------------------------------------------------
+
+export const emailDeliveriesApi = {
+  list(jobId?: string): Promise<ListResponse<EmailDelivery>> {
+    const qs = jobId ? `?job_id=${jobId}` : ""
+    return apiRequest<ListResponse<EmailDelivery>>(`/v1/email-deliveries${qs}`)
+  },
+  get(id: string): Promise<EmailDelivery> {
+    return apiRequest<EmailDelivery>(`/v1/email-deliveries/${id}`)
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Dashboard
+// ---------------------------------------------------------------------------
+
+export const dashboardApi = {
+  summary(): Promise<DashboardSummary> {
+    return apiRequest<DashboardSummary>("/v1/dashboard/summary")
+  },
+  radar(): Promise<DueRadarRow[]> {
+    return apiRequest<DueRadarRow[]>("/v1/dashboard/radar")
+  },
+  coverage(): Promise<CoverageRow[]> {
+    return apiRequest<CoverageRow[]>("/v1/dashboard/coverage")
+  },
+  upcomingReminders(): Promise<UpcomingReminderRow[]> {
+    return apiRequest<UpcomingReminderRow[]>("/v1/dashboard/upcoming-reminders")
+  },
+  overdue(): Promise<OverdueRow[]> {
+    return apiRequest<OverdueRow[]>("/v1/dashboard/overdue")
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Import (multipart/form-data – no JSON Content-Type)
+// ---------------------------------------------------------------------------
+
+async function apiUpload<T>(path: string, file: File): Promise<T> {
+  const headers = new Headers()
+  const csrf = getCsrfTokenFromCookie()
+  if (csrf) headers.set("X-CSRF-Token", csrf)
+
+  const form = new FormData()
+  form.append("file", file)
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers,
+    body: form,
+    credentials: "include",
+  })
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({ detail: `${response.status}` }))
+    throw new Error(typeof payload.detail === "string" ? payload.detail : JSON.stringify(payload.detail))
+  }
+
+  return response.json() as Promise<T>
+}
+
+export const importApi = {
+  organizations(file: File): Promise<ImportResult> {
+    return apiUpload<ImportResult>("/v1/import/organizations", file)
+  },
+  sessions(file: File): Promise<ImportResult> {
+    return apiUpload<ImportResult>("/v1/import/sessions", file)
   },
 }

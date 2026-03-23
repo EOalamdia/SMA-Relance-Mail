@@ -1,185 +1,127 @@
-# AI Handoff - App-Starter
+# AI Handoff — SMA (Systeme de Management Automatique)
 
-Ce document sert de memo operationnel pour tout agent AI qui reprend `apps/App-Starter`.
+Ce document sert de memo operationnel pour tout agent AI qui reprend `apps/SMA`.
 
 ## 1. Intent produit
 
-- Cette app est une fondation, pas une app metier finale.
-- Toute decision doit favoriser:
-1. Reutilisabilite.
-2. Coherence avec le hub.
-3. Securite par defaut.
+- Application de relance automatique de formations (remplace logique Excel).
+- Pipeline : referentiels → echeances → relances → envoi email.
+- `training_due_items` est l'objet metier central.
+- Les relances sont derivees de `due_items + reminder_rules actives`.
 
 ## 2. Invariants critiques
 
 ### Auth et securite
 
-- Auth centralisee par Traefik ForwardAuth.
-- Pas de formulaire de login local dans le starter.
-- Les routes metier doivent passer par `get_current_user`.
+- Auth centralisee par Traefik ForwardAuth (`X-User-Id`, `X-User-Email` headers).
+- Pas de formulaire de login local.
+- Tous les endpoints metier passent par `Depends(get_current_user)`.
 - Endpoints debug uniquement en dev (`API_DEBUG=true`).
 - CSRF active en production pour les requetes mutantes.
 
 ### Donnees et acces
 
-- RLS non imposee dans le starter (decision explicite).
-- Le controle d'acces principal passe par le hub (`public.access` + middleware auth).
+- Schema `sma_relance` — 11 tables, 4 vues, 6 enums.
+- RLS non activee — acces controle par hub auth + backend.
+- Soft delete via `archived_at` sur tables de reference.
+- Idempotence SHA256 pour les reminder_jobs.
 
 ### UI framework
 
-- Source unique UI: `apps/App-Starter/frontend/packages/ui-*`.
+- Source unique UI: `apps/SMA/frontend/packages/ui-*`.
 - Ne pas dupliquer des composants generiques dans `src/components`.
 
-## 3. Contrat "App Shell"
+## 3. Architecture backend
 
-Fichiers de reference:
+### Modules (sous `backend/features/`)
 
-- `apps/App-Starter/backend/features/starter/endpoints.py`
-- `apps/App-Starter/frontend/src/services/api.ts`
-- `apps/App-Starter/frontend/src/MainLayout.tsx`
-
-Comportement attendu:
-
-- `GET /v1/starter/app-shell` retourne `app_name` + `icon_url`.
-- `icon_url` vient de `public.apps.icon_url`.
-- Priorite de resolution DB:
-1. `link`
-2. `docker_service_name`
-3. `name`
-- Le frontend affiche:
-1. image si `icon_url` est une URL/chemin/data URI
-2. glyphe si `icon_url` est un texte
-3. fallback `puzzle` sinon
-
-## 4. Procedure de reprise recommandee
-
-1. Lire `apps/App-Starter/README.md` puis `apps/App-Starter/RULES.md`.
-2. Verifier l'etat courant:
-   - `git -C apps/App-Starter status --short`
-3. Verifier contrats backend:
-   - `GET /health`
-   - `GET /v1/starter/me`
-   - `GET /v1/starter/app-shell`
-4. Verifier shell frontend:
-   - user email visible
-   - logo `icon_url` visible
-5. Si doute de cache/bundle:
-   - `docker compose -f apps/App-Starter/docker-compose.yml up -d --build`
-
-## 5. Checklist avant livraison
-
-- Les references de chemin pointent vers `apps/App-Starter`, pas `App-Starter-Hub`.
-- Aucune regression sur auth headers et endpoints non-prod.
-- README + RULES + ce document sont a jour si contrat modifie.
-- Les placeholders critiques ne restent pas dans une config de deploiement.
-
-## 6. Decisions deja prises
-
-- Suppression du slug/path "par defaut": le slug doit etre personnalise.
-- Endpoints debug conserves uniquement en dev.
-- Aucune contrainte RLS imposee par le starter.
-- Logo du shell base sur `public.apps.icon_url`, plus sur une initiale.
-
----
-
-## 7. Demo CRUD Supabase — architecture de reference
-
-### Pourquoi cette demo existe
-
-Elle illustre le **pattern complet backend ↔ DB ↔ frontend** que tout agent doit
-reproduire pour chaque nouvelle entite metier. Le schema `app_starter` et la table
-`items` sont des **placeholders** — l'idee est de les renommer, pas de les garder.
-
-### Etat en base (applique à chaud le 2026-02-20)
-
-```sql
--- Schema cree:
-SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'app_starter';
--- Table cree avec trigger updated_at verifie:
-\d app_starter.items
--- 4 items seedes (UUIDs fixes, idempotent ON CONFLICT DO NOTHING):
-SELECT id, name FROM app_starter.items ORDER BY created_at;
-```
-
-Pour appliquer sur un environnement vierge (sans `supabase db reset`) :
-```bash
-PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
-  -f supabase/migrations/20260220000000_app_starter_demo.sql
-PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
-  -f supabase/seeds/005_app_starter.sql
-```
-
-### Fichiers impliques (tous marques PLACEHOLDER)
-
-| Couche | Fichier | Ce qui est placeholder |
+| Module | Prefix API | Pattern |
 |---|---|---|
-| DB migration | `supabase/migrations/20260220000000_app_starter_demo.sql` | schema `app_starter`, table `items` |
-| DB seed | `supabase/seeds/005_app_starter.sql` | les 4 items demo |
-| Config | `supabase/config.toml` → `api.schemas` | `"app_starter"` dans la liste |
-| Backend schemas | `backend/features/items/schemas.py` | `ItemOut`, `ItemCreate`, `ItemUpdate` |
-| Backend endpoints | `backend/features/items/endpoints.py` | `_SCHEMA`, `_TABLE`, prefix `/v1/items` |
-| Backend router | `backend/main.py` | `items_router` |
-| Frontend types | `frontend/src/services/api.ts` | `ItemOut`, `itemsApi` |
-| Frontend page | `frontend/src/pages/Items.tsx` | tout le composant |
-| Frontend router | `frontend/src/App.tsx` | route `/items` |
-| Frontend nav | `frontend/src/config/nav.ts` | entree "Items (demo)" |
+| `organization_types` | `/v1/organization-types` | CRUD + soft delete |
+| `organizations` | `/v1/organizations` | CRUD + soft delete + type filter |
+| `contacts` | `/v1/contacts` | CRUD + org filter + is_primary |
+| `training_courses` | `/v1/training-courses` | CRUD + soft delete |
+| `course_applicability` | `/v1/course-applicability` | Create/List/Delete |
+| `training_sessions` | `/v1/training-sessions` | CRUD + org/course filters |
+| `due_items` | `/v1/due-items` | List/Compute/Close + `service.py` |
+| `reminder_rules` | `/v1/reminder-rules` | CRUD + soft delete |
+| `email_templates` | `/v1/email-templates` | CRUD + soft delete |
+| `reminder_jobs` | `/v1/reminder-jobs` | List/Generate/Send/Cancel + `service.py` |
+| `email_deliveries` | `/v1/email-deliveries` | Read-only |
+| `dashboard` | `/v1/dashboard/*` | 5 endpoints (summary, radar, coverage, upcoming, overdue) |
+| `import_data` | `/v1/import/*` | CSV upload orgs + sessions |
 
-### Pattern a reproduire pour une nouvelle entite
+### Services critiques
 
-1. **Migration** : creer `supabase/migrations/<timestamp>_<slug>.sql`
-   - `CREATE SCHEMA IF NOT EXISTS app_<slug>;`
-   - Table avec `id UUID PK`, colonnes metier, `created_at`, `updated_at`
-   - Trigger `public.update_updated_at_column()` reutilise
-   - Pas de RLS (decision starter)
-   - Ajouter le schema a `supabase/config.toml → api.schemas`
+- `due_items/service.py` — §6.1 : derive due_date/status depuis sessions + courses, upsert idempotent.
+- `reminder_jobs/service.py` — §6.2 : SHA256 idempotency_key, generate + send_pending.
+- `core/email_sender.py` — §6.3 : SMTP Gmail, template `{{var}}` rendering, delivery logging, log-only fallback.
 
-2. **Seed** : `supabase/seeds/<N>_<slug>.sql`
-   - UUIDs fixes pour idempotence (`ON CONFLICT DO NOTHING`)
-
-3. **Backend** : `features/<entite>/`
-   - `schemas.py` : `<Entite>Out`, `<Entite>Create`, `<Entite>Update`, `<Entite>sListResponse`
-   - `endpoints.py` : router avec `_SCHEMA`/`_TABLE`, `get_schema_table()`, tous les endpoints avec `Depends(get_current_user)`
-   - Enregistrer le router dans `main.py`
-
-4. **Frontend** :
-   - Types + API object dans `services/api.ts`
-   - Page dans `pages/<Entite>.tsx` (liste + creation + edition inline + suppression)
-   - Route dans `App.tsx`
-   - Entree dans `config/nav.ts`
-
-5. **Appliquer a chaud** (pas de db reset necessaire) :
-   ```bash
-   PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f supabase/migrations/<fichier>.sql
-   PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f supabase/seeds/<fichier>.sql
-   ```
-   Puis rebuild docker si necessaire :
-   ```bash
-   docker compose -f apps/App-Starter/docker-compose.yml up -d --build
-   ```
-
-### Utilitaire cle : `get_schema_table()`
+### Acces DB
 
 ```python
-# apps/App-Starter/backend/core/supabase.py
 from core.supabase import get_schema_table
-
-table = get_schema_table("app_<slug>", "<entite>")
-rows  = table.select("*").order("created_at", desc=True).execute().data
+table = get_schema_table("sma_relance", "table_name")
 ```
 
-C'est le point d'entree unique pour tout acces DB schema-specifique.
-Ne pas recreer de client Supabase manuel dans les endpoints.
+## 4. Architecture frontend
 
-### Checklist complete avant clonage / livraison d'une nouvelle app
+### Pages (sous `frontend/src/pages/`)
 
-- [ ] Schema renomme : `app_starter` → `app_<slug>` (migration + config.toml + endpoints)
-- [ ] Table renommee : `items` → `<entite>` (migration + endpoints + schemas + frontend)
-- [ ] Prefixe route renomme : `/v1/items` → `/v1/<slug>/<entite>`
-- [ ] `itemsApi` renomme dans `services/api.ts`
-- [ ] Page `Items.tsx` renommee et contenu adapte
-- [ ] Route `/items` renommee dans `App.tsx`
-- [ ] Entree nav mise a jour dans `config/nav.ts`
-- [ ] UUIDs seed remplaces par de nouveaux UUIDs fixes metier
-- [ ] Fichiers migration/seed renommes avec nouveau timestamp + slug
-- [ ] `README.md` + `RULES.md` + ce document mis a jour
+Dashboard, OrganizationTypes, Organizations, Contacts, TrainingCourses,
+CourseApplicability, TrainingSessions, DueItems, ReminderRules, EmailTemplates,
+ReminderJobs, EmailDeliveries, ImportData, Home.
+
+### API client (`services/api.ts`)
+
+13 API objects : organizationTypesApi, organizationsApi, contactsApi,
+trainingCoursesApi, courseApplicabilityApi, trainingSessionsApi, dueItemsApi,
+reminderRulesApi, emailTemplatesApi, reminderJobsApi, emailDeliveriesApi,
+dashboardApi, importApi.
+
+### Types (`types/sma.ts`)
+
+Toutes les interfaces TypeScript pour les entites, enums, et vues dashboard.
+
+### Navigation (`config/nav.ts`)
+
+5 sections : Accueil, Referentiels, Formation, Relances, Parametrage.
+
+## 5. Scheduler (`scheduler/`)
+
+Container Docker independant, 3 threads daemon :
+- **compute** : `POST /v1/due-items/compute` a 06h00
+- **generate** : `POST /v1/reminder-jobs/generate` a 06h30
+- **send** : `POST /v1/reminder-jobs/send-pending` toutes les 15min
+
+## 6. Contrat "App Shell"
+
+- `GET /v1/starter/app-shell` retourne `app_name` + `icon_url`.
+- `GET /v1/starter/me` retourne user info.
+- Le frontend affiche image si URL, glyphe si texte, fallback `puzzle`.
+
+## 7. Procedure de reprise recommandee
+
+1. Lire `apps/SMA/README.md` puis `apps/SMA/RULES.md`.
+2. Verifier l'etat courant : `git -C apps/SMA status --short`
+3. Verifier contrats backend : `GET /health`, `GET /v1/starter/me`
+4. Verifier le dashboard : `GET /v1/dashboard/summary`
+5. Si doute : `docker compose -f apps/SMA/docker-compose.yml up -d --build`
+
+## 8. Checklist avant livraison
+
+- Aucune regression sur auth headers et endpoints non-prod.
+- README + RULES + ce document sont a jour.
+- Les variables SMTP sont configurees dans `.env` (ou log-only mode actif).
+- Le scheduler demarre correctement et atteint le backend.
+- Les 4 vues SQL retournent des donnees coherentes apres compute.
+
+## 9. Decisions prises
+
+- Schema `sma_relance` (pas `app_sma`) — choix utilisateur.
+- Pas de table `employees` ni `training_attendees` au MVP.
+- Email via Gmail SMTP avec fallback log-only.
+- Scheduler par container cron (pas Celery/APScheduler).
+- RBAC simple via ForwardAuth (pas de roles granulaires).
+- Import CSV pour migration initiale depuis Excel.
 

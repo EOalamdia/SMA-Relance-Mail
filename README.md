@@ -1,101 +1,109 @@
-# App-Starter
+# SMA — Systeme de Management Automatique
 
-`apps/App-Starter` est la base de reference pour creer de nouvelles apps du hub.
-Le but: garder une fondation unique, securisee, et simple a cloner/customiser.
+Application de relance automatique de formations. Remplace la logique Excel
+historique par un pipeline complet : referentiels → echeances → relances → envoi email.
 
 ## Scope
 
-- Backend FastAPI aligne sur la securite globale du hub.
-- Frontend React + shell standard (menu lateral + sous-pages).
-- Framework UI local a l'app dans `frontend/packages/ui-*` (source unique).
-- Integration Traefik + Supabase + scripts hub.
+- **Backend** FastAPI (schema `sma_relance`, 11 tables, 4 vues SQL).
+- **Frontend** React 18 + TypeScript + Vite, 12 pages metier + dashboard.
+- **Scheduler** container cron (compute echeances, generation jobs, envoi emails).
+- Integration Traefik + Supabase + Docker multi-stage.
 
 ## Architecture
 
 ```text
-apps/App-Starter/
+apps/SMA/
   backend/
-    core/                 # config, auth headers ForwardAuth, middleware, supabase, csrf, cache
+    core/                         # config, auth ForwardAuth, middleware, supabase, csrf, cache, email_sender
     features/
-      health/             # GET /health
-      starter/            # endpoints de base (/v1/starter/*)
-    main.py               # bootstrap FastAPI
+      health/                     # GET /health
+      starter/                    # /v1/starter/* (app-shell, me, debug)
+      organization_types/         # CRUD /v1/organization-types
+      organizations/              # CRUD /v1/organizations
+      contacts/                   # CRUD /v1/contacts
+      training_courses/           # CRUD /v1/training-courses
+      course_applicability/       # Create/List/Delete /v1/course-applicability
+      training_sessions/          # CRUD /v1/training-sessions
+      due_items/                  # List/Compute/Close /v1/due-items
+      reminder_jobs/              # List/Generate/Send/Cancel /v1/reminder-jobs
+      reminder_rules/             # CRUD /v1/reminder-rules
+      email_templates/            # CRUD /v1/email-templates
+      email_deliveries/           # Read-only /v1/email-deliveries
+      dashboard/                  # 5 endpoints /v1/dashboard/*
+      import_data/                # CSV upload /v1/import/*
+    main.py
   frontend/
     packages/
-      ui-core/            # composants UI generiques
-      ui-shell/           # shell applicatif (sidebar, nav, user menu)
-      ui-tokens/          # design tokens + preset tailwind
+      ui-core/                    # composants UI generiques
+      ui-shell/                   # shell applicatif (sidebar, nav, user menu)
+      ui-tokens/                  # design tokens + preset tailwind
     src/
-      config/nav.ts       # navigation de reference
-      pages/              # pages de demonstration
-      services/api.ts     # client API + CSRF
-      MainLayout.tsx      # integration shell + user + icon_url
+      config/nav.ts               # 5 sections: Accueil, Referentiels, Formation, Relances, Parametrage
+      pages/                      # 12 pages metier + Home + Dashboard
+      services/api.ts             # 13 API objects + apiUpload
+      types/sma.ts                # interfaces TypeScript pour toutes les entites
+      MainLayout.tsx
+  scheduler/
+    scheduler.py                  # 3 threads cron (compute 06h, generate 06h30, send 15min)
+    Dockerfile
+    requirements.txt
   docker-compose.yml
-  .env.example
-  RULES.md
   docs/AI-HANDOFF.md
 ```
 
-## Contrats de securite (invariants)
+## Schema SQL `sma_relance`
 
-- Auth locale interdite: l'identite vient de Traefik ForwardAuth.
-- Tous les endpoints metier doivent dependre de `get_current_user`.
-- Endpoints debug actifs uniquement hors production (`API_DEBUG=true`).
-- CSRF active en production pour `POST/PUT/PATCH/DELETE` via `X-CSRF-Token`.
-- RLS non imposee par la starter (decision produit): acces gere par hub auth + backend.
-- Les placeholders (`__APP_*__`, `FRONTEND_BASE_PATH`) doivent etre remplaces avant deploiement.
+11 tables, 6 enums, 4 vues, trigger `set_updated_at()`.
 
-## Base de donnees demo (PLACEHOLDER)
+| Table | Role |
+|---|---|
+| `organization_types` | Types d'organismes (OPCO, CCI, etc.) |
+| `organizations` | Organismes rattaches a un type |
+| `organization_contacts` | Contacts email par organisme |
+| `training_courses` | Catalogue formations (code, label, validite, renouvellement) |
+| `course_applicability` | Lien N-N formation ↔ type d'organisme |
+| `training_sessions` | Sessions de formation realisees |
+| `training_due_items` | **Objet central** — echeances calculees |
+| `reminder_rules` | Regles de relance parametrables (J-30, J-7, J, J+7…) |
+| `email_templates` | Templates Jinja with `{{variables}}` |
+| `reminder_jobs` | Jobs de relance generes (idempotent via SHA256 key) |
+| `email_deliveries` | Log d'envoi email |
 
-> **Ces elements sont des placeholders a renommer obligatoirement** lors du clonage
-> du starter vers une nouvelle app.
+Vues: `vw_due_radar`, `vw_coverage_by_org_type`, `vw_upcoming_reminders`, `vw_overdue_due_items`.
 
-Le starter inclut un schema et un CRUD de demonstration :
+Migration: `supabase/migrations/20260323080000_sma_relance.sql`
+Seed: `supabase/seeds/010_sma_relance.sql`
 
-| Element | Valeur placeholder | A remplacer par |
-|---|---|---|
-| Schema Postgres | `app_starter` | `app_<votre_slug>` |
-| Table principale | `items` | `<votre_entite>` |
-| Route backend | `/v1/items` | `/v1/<votre_slug>/<entite>` |
-| Page frontend | `/items` | `/<entite>` |
-| Fichier migration | `20260220000000_app_starter_demo.sql` | `<timestamp>_<app_slug>_schema.sql` |
-| Fichier seed | `005_app_starter.sql` | `<N>_<app_slug>.sql` |
+## Pipeline metier
 
-### Structure CRUD incluse
+1. **Compute** (`POST /v1/due-items/compute`) — dérive les echeances depuis sessions + courses.
+2. **Generate** (`POST /v1/reminder-jobs/generate`) — cree les jobs de relance selon les regles actives.
+3. **Send** (`POST /v1/reminder-jobs/send-pending`) — envoie les emails via SMTP (ou log si non configure).
 
-```
-backend/features/items/
-  __init__.py
-  schemas.py   ← ItemOut, ItemCreate, ItemUpdate, ItemsListResponse
-  endpoints.py ← GET/POST /v1/items, GET/PATCH/DELETE /v1/items/{id}
-frontend/src/pages/Items.tsx        ← page liste + creation + edition inline
-frontend/src/services/api.ts        ← itemsApi (list, get, create, update, remove)
-supabase/migrations/20260220000000_app_starter_demo.sql
-supabase/seeds/005_app_starter.sql  ← 4 items de demonstration
-```
+Le scheduler execute ce pipeline automatiquement (06h00, 06h30, toutes les 15min).
 
-### Checklist migration schema
+## Contrats de securite
 
-1. Renommer le schema dans `supabase/migrations/<ts>_<slug>_schema.sql`
-2. Mettre a jour `supabase/config.toml` → `api.schemas` (remplacer `app_starter`)
-3. Renommer `_SCHEMA` et `_TABLE` dans `backend/features/items/endpoints.py`
-4. Renommer les types dans `backend/features/items/schemas.py`
-5. Renommer `itemsApi` dans `frontend/src/services/api.ts`
-6. Renommer la page `Items.tsx` et la route dans `App.tsx`
-7. Mettre a jour la nav dans `config/nav.ts`
+- Auth via Traefik ForwardAuth (headers `X-User-Id`, `X-User-Email`).
+- Tous les endpoints metier dependent de `get_current_user`.
+- CSRF active en production pour les requetes mutantes.
+- Soft delete via `archived_at` sur les tables de reference.
+- Idempotence SHA256 pour les reminder_jobs.
+- RLS non activee — acces controle par hub auth + backend.
 
-### RLS
+## Variables d'environnement
 
-RLS non activee par defaut (conforme `RULES.md`) : l'acces est controle par
-ForwardAuth Traefik + les verifications backend (`Depends(get_current_user)`).
+Heritees du hub :
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `REDIS_URL` / `REDIS_HOST` / `REDIS_PORT`
+- `CORS_ORIGINS`, `DOMAIN_FRONTEND`, `DOMAIN_API`
+
+Specifiques SMA :
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`
+- `SCHEDULER_KEY` (pour auth interne scheduler → backend)
 
 ## Integration hub + Supabase
-
-Variables minimales:
-
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
 
 Metadonnees app attendues dans `public.apps`:
 
