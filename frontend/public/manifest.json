@@ -1,0 +1,31 @@
+{
+  "name": "%VITE_APP_NAME%",
+  "short_name": "%VITE_APP_NAME%",
+  "description": "%VITE_APP_DESCRIPTION%",
+  "id": "%FRONTEND_BASE_PATH%/",
+  "start_url": "%FRONTEND_BASE_PATH%/",
+  "scope": "%FRONTEND_BASE_PATH%/",
+  "display": "standalone",
+  "background_color": "%VITE_THEME_COLOR%",
+  "theme_color": "%VITE_THEME_COLOR%",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
