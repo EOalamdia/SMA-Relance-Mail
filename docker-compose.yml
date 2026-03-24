@@ -6,7 +6,7 @@ networks:
     name: supabase_network_${SUPABASE_PROJECT_ID}
 
 services:
-  app-starter-backend:
+  sma-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -72,14 +72,14 @@ services:
       - "traefik.http.middlewares.${APP_SLUG}-api-strip.stripprefix.prefixes=${FRONTEND_BASE_PATH}/api"
       - "traefik.http.middlewares.${APP_SLUG}-api-strip.stripprefix.forceslash=true"
       - "traefik.http.routers.${APP_SLUG}-backend.rule=(Host(`${DOMAIN_FRONTEND}`) || Host(`${DOMAIN_API}`)) && PathPrefix(`${FRONTEND_BASE_PATH}/api`)"
-      - "traefik.http.routers.${APP_SLUG}-backend.entrypoints=websecure"
-      - "traefik.http.routers.${APP_SLUG}-backend.tls=true"
+      - "traefik.http.routers.${APP_SLUG}-backend.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.${APP_SLUG}-backend.tls=${TRAEFIK_TLS:-true}"
       - "traefik.http.routers.${APP_SLUG}-backend.priority=220"
       - "traefik.http.routers.${APP_SLUG}-backend.middlewares=hub_almadia_auth@file,security-headers@file,${APP_SLUG}-api-strip"
       - "traefik.http.services.${APP_SLUG}-backend.loadbalancer.server.port=8000"
     restart: unless-stopped
 
-  app-starter-frontend:
+  sma-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -94,7 +94,7 @@ services:
     env_file:
       - ./.env
     depends_on:
-      app-starter-backend:
+      sma-backend:
         condition: service_healthy
     networks:
       - hub_almadia_network
@@ -119,16 +119,16 @@ services:
       - "traefik.http.middlewares.${APP_SLUG}-frontend-strip.stripprefix.prefixes=${FRONTEND_BASE_PATH}"
       - "traefik.http.middlewares.${APP_SLUG}-frontend-strip.stripprefix.forceslash=true"
       - "traefik.http.routers.${APP_SLUG}.rule=(Host(`${DOMAIN_FRONTEND}`) || Host(`${DOMAIN_API}`)) && PathPrefix(`${FRONTEND_BASE_PATH}`)"
-      - "traefik.http.routers.${APP_SLUG}.entrypoints=websecure"
-      - "traefik.http.routers.${APP_SLUG}.tls=true"
+      - "traefik.http.routers.${APP_SLUG}.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.${APP_SLUG}.tls=${TRAEFIK_TLS:-true}"
       - "traefik.http.routers.${APP_SLUG}.priority=215"
       - "traefik.http.routers.${APP_SLUG}.middlewares=hub_almadia_auth@file,security-headers@file,${APP_SLUG}-frontend-strip"
       - "traefik.http.routers.${APP_SLUG}.service=${APP_SLUG}-frontend"
 
       # Route publique pour les assets PWA (nécessaire pour l'installation native WebAPK)
       - "traefik.http.routers.${APP_SLUG}-pwa.rule=(Host(`${DOMAIN_FRONTEND}`) || Host(`${DOMAIN_API}`)) && PathPrefix(`${FRONTEND_BASE_PATH}`) && (PathPrefix(`${FRONTEND_BASE_PATH}/manifest.json`) || PathPrefix(`${FRONTEND_BASE_PATH}/sw.js`) || PathPrefix(`${FRONTEND_BASE_PATH}/icon-192.png`) || PathPrefix(`${FRONTEND_BASE_PATH}/icon-512.png`) || PathPrefix(`${FRONTEND_BASE_PATH}/icon.svg`) || PathPrefix(`${FRONTEND_BASE_PATH}/apple-touch-icon.png`))"
-      - "traefik.http.routers.${APP_SLUG}-pwa.entrypoints=websecure"
-      - "traefik.http.routers.${APP_SLUG}-pwa.tls=true"
+      - "traefik.http.routers.${APP_SLUG}-pwa.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.${APP_SLUG}-pwa.tls=${TRAEFIK_TLS:-true}"
       - "traefik.http.routers.${APP_SLUG}-pwa.priority=250"
       - "traefik.http.routers.${APP_SLUG}-pwa.middlewares=security-headers@file,${APP_SLUG}-frontend-strip"
       - "traefik.http.routers.${APP_SLUG}-pwa.service=${APP_SLUG}-frontend"
@@ -146,7 +146,7 @@ services:
       - BACKEND_URL=http://${APP_SLUG}-backend:8000
       - SCHEDULER_KEY=${SCHEDULER_KEY:-}
     depends_on:
-      app-starter-backend:
+      sma-backend:
         condition: service_healthy
     networks:
       - hub_almadia_network

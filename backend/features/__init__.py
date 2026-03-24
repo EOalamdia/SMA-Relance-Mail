@@ -1,1 +1,1 @@
-"""Feature package for App-Starter."""
+"""Feature package for SMA."""

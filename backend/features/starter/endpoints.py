@@ -87,7 +87,7 @@ if not settings.is_production:
     @router.get("/debug/ping", response_model=StarterPingResponse)
     def ping_debug(user: UserContext = Depends(get_current_user)) -> StarterPingResponse:
         return StarterPingResponse(
-            message="starter backend reachable",
+            message="SMA backend reachable",
             user_id=user.user_id,
             user_email=user.user_email,
             timestamp=datetime.now(tz=UTC),

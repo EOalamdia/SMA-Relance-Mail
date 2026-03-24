@@ -13,40 +13,13 @@
     
     <title>%VITE_APP_NAME%</title>
     <!-- Icons and Manifest for PWA / Mobile Home Screen -->
-    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
-    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="icon" type="image/svg+xml" href="__FRONTEND_BASE_PATH__/icon.svg" />
+    <link rel="apple-touch-icon" href="__FRONTEND_BASE_PATH__/icon.svg" />
     <link rel="manifest" href="__FRONTEND_BASE_PATH__/manifest.json?v=6" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("__FRONTEND_BASE_PATH__/sw.js").then((reg) => {
-            reg.onupdatefound = () => {
-              const installingWorker = reg.installing;
-              installingWorker.onstatechange = () => {
-                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  console.log("New service worker found, reloading...");
-                  window.location.reload();
-                }
-              };
-            };
-          }).catch((err) => {
-            console.error("SW registration failed: ", err);
-          });
-        });
-
-        let refreshing = false;
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if (!refreshing) {
-            window.location.reload();
-            refreshing = true;
-          }
-        });
-      }
-    </script>
   </body>
 
 </html>

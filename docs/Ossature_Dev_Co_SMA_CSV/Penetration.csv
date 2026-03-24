@@ -1,0 +1,11 @@
+﻿Nom,Nature,Potentiel,Réalisé,Taux de pénétration,Unnamed: 5,Full automatique,Unnamed: 7,Unnamed: 8,Formations,PSDM,HAD,SSIAD,SPASAD,Services autonomie,Pharmacie,Ergothérapeute,Médecin
+ALMADIA,PSDM,10,5,0.5,,,,,Matériel Médical maintien à domicile (MAD),X,X,X,X,X,X,,
+GRANVILLE MATERIEL MEDICAL,PSDM,10,1,0.1,,,,,PSDM Intervenant,X,,,,,,,
+Diadom,PSDM,10,1,0.1,,,,,PSDM Garant Pro Santé,X,,,,,,,
+Santelys,PSDM,10,1,0.1,,,,,Soins Palliatifs : Approche de la personne en fin de vie,X,,X,X,X,,,
+FILIERIS,PSDM,10,1,0.1,,,,,"Prévention, traitement de l’escarre et lits médicaux",X,X,X,X,X,X,,
+MVD MEDICAL,PSDM,10,1,0.1,,,,,Transfert de patients,X,X,X,X,X,X,,
+SANTEOL,PSDM,10,1,0.1,,,,,Mobilité,X,X,X,X,X,X,,
+MSANTE,PSDM,10,2,0.2,,,,,Hygiène et incontinence,X,X,X,X,X,X,,
+Pharmacie Louette Delaisse,Pharmacie,7,1,0.14285714285714285,,,,,Nomenclature VPH ESSENTIEL,X,,X,X,X,X,X,X
+DOMetVIE,À renseigner,Inconnu,1,Inconnu,,,,,Nomenclature VPH COMPLET,X,,X,X,X,X,X,X

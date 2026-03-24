@@ -68,7 +68,7 @@ def root() -> dict[str, str]:
 async def csp_report(request: Request) -> dict[str, str]:
     import logging
 
-    logger = logging.getLogger("app_starter.security.csp")
+    logger = logging.getLogger("sma.security.csp")
     try:
         body = await request.json()
         report = body.get("csp-report", body)

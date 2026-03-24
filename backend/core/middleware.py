@@ -13,7 +13,7 @@ from starlette.types import ASGIApp
 from .cache import redis_client
 from .config import settings
 
-logger = logging.getLogger("app_starter.middleware")
+logger = logging.getLogger("sma.middleware")
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

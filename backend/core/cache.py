@@ -9,7 +9,7 @@ import redis
 
 from .config import settings
 
-logger = logging.getLogger("app_starter.cache")
+logger = logging.getLogger("sma.cache")
 
 
 class RedisClient:

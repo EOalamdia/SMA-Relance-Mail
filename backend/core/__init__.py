@@ -1,4 +1,4 @@
-"""Core exports for App-Starter."""
+"""Core exports for SMA."""
 from .config import get_settings, settings
 from .cache import redis_client
 from .dependencies import UserContext, get_current_user

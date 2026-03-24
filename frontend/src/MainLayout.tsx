@@ -51,7 +51,7 @@ function ShellLogo({ appName, iconUrl }: { appName: string; iconUrl: string | nu
 import { AuthProvider, SessionExpiredModal } from "@ui-shell"
 
 function MainLayoutChild() {
-  const defaultAppName = import.meta.env.VITE_APP_NAME || "Starter App"
+  const defaultAppName = import.meta.env.VITE_APP_NAME || "SMA"
   const [currentUser, setCurrentUser] = useState<UserProfile>(DEFAULT_USER)
   const [shell, setShell] = useState<{ appName: string; iconUrl: string | null }>({
     appName: defaultAppName,

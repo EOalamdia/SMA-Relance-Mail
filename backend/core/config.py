@@ -1,4 +1,4 @@
-"""Configuration for App-Starter."""
+"""Configuration for SMA."""
 from functools import lru_cache
 
 from pydantic import Field
