@@ -1,0 +1,178 @@
+import { useEffect, useState } from "react"
+import { MessageSquare, Plus, Pencil } from "lucide-react"
+
+import { Badge } from "@ui-core/components/ui/badge"
+import { Button } from "@ui-core/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@ui-core/components/ui/card"
+
+import type { CommunicationTopic, CommunicationTopicCreate, CommunicationTopicUpdate } from "../types/sma"
+import { communicationTopicsApi } from "../services/api"
+
+export default function CommunicationTopicsPage() {
+  const [items, setItems] = useState<CommunicationTopic[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
+
+  // Form state
+  const [formCode, setFormCode] = useState("")
+  const [formLabel, setFormLabel] = useState("")
+  const [formDescription, setFormDescription] = useState("")
+  const [formUnsubscribable, setFormUnsubscribable] = useState(true)
+
+  useEffect(() => { load() }, [])
+
+  async function load() {
+    setLoading(true); setError(null)
+    try { const d = await communicationTopicsApi.list(); setItems(d.items) }
+    catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
+    finally { setLoading(false) }
+  }
+
+  function resetForm() {
+    setFormCode(""); setFormLabel(""); setFormDescription(""); setFormUnsubscribable(true)
+    setShowCreate(false); setEditing(null)
+  }
+
+  function startEdit(item: CommunicationTopic) {
+    setEditing(item.id)
+    setFormCode(item.code)
+    setFormLabel(item.label)
+    setFormDescription(item.description ?? "")
+    setFormUnsubscribable(item.is_unsubscribable)
+    setShowCreate(false)
+  }
+
+  async function handleCreate() {
+    try {
+      const data: CommunicationTopicCreate = {
+        code: formCode,
+        label: formLabel,
+        description: formDescription || undefined,
+        is_unsubscribable: formUnsubscribable,
+      }
+      await communicationTopicsApi.create(data)
+      resetForm()
+      load()
+    } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
+  }
+
+  async function handleUpdate(id: string) {
+    try {
+      const data: CommunicationTopicUpdate = {
+        label: formLabel,
+        description: formDescription || undefined,
+        is_unsubscribable: formUnsubscribable,
+      }
+      await communicationTopicsApi.update(id, data)
+      resetForm()
+      load()
+    } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
+  }
+
+  async function handleDeactivate(id: string) {
+    if (!confirm("Désactiver ce topic de communication ?")) return
+    try {
+      await communicationTopicsApi.deactivate(id)
+      load()
+    } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
+  }
+
+  return (
+    <div className="space-y-6">
+      <header className="space-y-2">
+        <Badge variant="gradient">Désinscription</Badge>
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <MessageSquare className="h-6 w-6 text-primary" /> Topics de communication
+        </h1>
+        <p className="text-muted-foreground max-w-2xl">
+          Catégories d'emails permettant de gérer les désinscriptions par type de message.
+        </p>
+      </header>
+
+      <div className="flex items-center gap-3">
+        <Button onClick={() => { resetForm(); setShowCreate(true) }} variant="outline">
+          <Plus className="h-4 w-4 mr-2" /> Nouveau topic
+        </Button>
+      </div>
+
+      {/* Create form */}
+      {showCreate && (
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Nouveau topic</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <input placeholder="Code (ex: training_reminders)" value={formCode} onChange={e => setFormCode(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <input placeholder="Libellé" value={formLabel} onChange={e => setFormLabel(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <input placeholder="Description (optionnel)" value={formDescription} onChange={e => setFormDescription(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={formUnsubscribable} onChange={e => setFormUnsubscribable(e.target.checked)} />
+              Désinscriptible
+            </label>
+            <div className="flex gap-2">
+              <Button onClick={handleCreate} size="sm">Créer</Button>
+              <Button onClick={resetForm} size="sm" variant="ghost">Annuler</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* List */}
+      <div className="space-y-3">
+        {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
+        {error && <Card className="border-destructive/50"><CardContent className="pt-4"><p className="text-sm text-destructive">{error}</p></CardContent></Card>}
+        {!loading && !error && items.length === 0 && <Card><CardContent className="pt-6 text-center text-sm text-muted-foreground">Aucun topic de communication.</CardContent></Card>}
+
+        {items.map(item => (
+          <Card key={item.id}>
+            <CardContent className="pt-4">
+              {editing === item.id ? (
+                <div className="space-y-3">
+                  <input value={formLabel} onChange={e => setFormLabel(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                  <input value={formDescription} onChange={e => setFormDescription(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={formUnsubscribable} onChange={e => setFormUnsubscribable(e.target.checked)} />
+                    Désinscriptible
+                  </label>
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleUpdate(item.id)} size="sm">Enregistrer</Button>
+                    <Button onClick={resetForm} size="sm" variant="ghost">Annuler</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{item.label}</span>
+                      <span className="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{item.code}</span>
+                      {item.is_unsubscribable ? (
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800">Désinscriptible</span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">Transactionnel</span>
+                      )}
+                      {!item.is_active && (
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800">Inactif</span>
+                      )}
+                    </div>
+                    {item.description && <p className="text-xs text-muted-foreground mt-1">{item.description}</p>}
+                  </div>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => startEdit(item)}><Pencil className="h-4 w-4" /></Button>
+                    {item.is_active && (
+                      <Button variant="ghost" size="sm" onClick={() => handleDeactivate(item.id)} className="text-destructive">Désactiver</Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}

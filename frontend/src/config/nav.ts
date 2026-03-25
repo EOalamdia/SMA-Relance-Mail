@@ -1,6 +1,6 @@
 import {
-  BarChart3, Building2, CalendarDays, GraduationCap, Home, Link2,
-  Mail, MailCheck, Bell, Send, Tags, Target, Upload, Users,
+  BarChart3, Building2, CalendarDays, ClipboardList, GraduationCap, Home, Link2,
+  Mail, MailCheck, MailX, MessageSquare, Bell, Send, Tags, Target, Upload, Users,
 } from "lucide-react"
 
 import type { NavSection } from "@ui-shell/types/nav"
@@ -38,6 +38,14 @@ export function buildNavConfig(_isDev: boolean): NavSection[] {
       items: [
         { title: "Jobs de relance", href: "/reminder-jobs", icon: Send },
         { title: "Historique envois", href: "/email-deliveries", icon: MailCheck },
+      ],
+    },
+    {
+      title: "Désinscription",
+      items: [
+        { title: "Topics de communication", href: "/communication-topics", icon: MessageSquare },
+        { title: "Abonnements email", href: "/email-subscriptions", icon: MailX },
+        { title: "Journal désinscriptions", href: "/unsubscribe-events", icon: ClipboardList },
       ],
     },
     {

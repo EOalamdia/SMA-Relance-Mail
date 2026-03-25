@@ -27,12 +27,15 @@ def _table():
 @router.get("", response_model=CourseApplicabilityListResponse)
 def list_course_applicability(
     organization_id: UUID | None = Query(None),
+    organization_type_id: UUID | None = Query(None),
     course_id: UUID | None = Query(None),
     _user: UserContext = Depends(get_current_user),
 ):
     query = _table().select("*")
     if organization_id:
         query = query.eq("organization_id", str(organization_id))
+    if organization_type_id:
+        query = query.eq("organization_type_id", str(organization_type_id))
     if course_id:
         query = query.eq("course_id", str(course_id))
     response = query.order("created_at", desc=True).execute()
@@ -42,10 +45,11 @@ def list_course_applicability(
 
 @router.post("", response_model=CourseApplicabilityOut, status_code=status.HTTP_201_CREATED)
 def create_course_applicability(payload: CourseApplicabilityCreate, _user: UserContext = Depends(get_current_user)):
-    data = {
-        "organization_id": str(payload.organization_id),
-        "course_id": str(payload.course_id),
-    }
+    data: dict = {"course_id": str(payload.course_id)}
+    if payload.organization_id:
+        data["organization_id"] = str(payload.organization_id)
+    if payload.organization_type_id:
+        data["organization_type_id"] = str(payload.organization_type_id)
     response = _table().insert(data).execute()
     if not response.data:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Echec de la creation.")

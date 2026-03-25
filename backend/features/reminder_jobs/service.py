@@ -73,8 +73,11 @@ def generate_reminder_jobs() -> dict:
     """Generate reminder_jobs for all eligible due_items + active rules.
 
     Only creates jobs if idempotency_key is absent (ON CONFLICT skip).
+    Skips unsubscribed recipients (suppression list check).
     """
-    stats = {"generated": 0, "skipped": 0, "errors": 0}
+    from features.unsubscribe.service import is_email_unsubscribed
+
+    stats = {"generated": 0, "skipped": 0, "skipped_unsubscribed": 0, "errors": 0}
 
     # Load active rules
     rules = (
@@ -120,6 +123,19 @@ def generate_reminder_jobs() -> dict:
                 recipient_email = recipient["email"]
                 contact_id = recipient["id"]
 
+                # Determine communication topic
+                topic_id = rule.get("communication_topic_id")
+                suppress = rule.get("suppress_if_unsubscribed", True)
+
+                # Check suppression list — skip if unsubscribed
+                if suppress and is_email_unsubscribed(recipient_email, topic_id):
+                    logger.info(
+                        "Skipping job for %s (unsubscribed) due_item=%s rule=%s",
+                        recipient_email[:20], di["id"], rule["id"],
+                    )
+                    stats["skipped_unsubscribed"] += 1
+                    continue
+
                 # Compute idempotency key
                 idem_key = _compute_idempotency_key(
                     di["id"], rule["id"], scheduled_for_str, recipient_email
@@ -139,18 +155,25 @@ def generate_reminder_jobs() -> dict:
 
                 # Create job
                 now_ts = datetime.now(timezone.utc).isoformat()
-                _table("reminder_jobs").insert({
+                email_normalized = recipient_email.strip().lower()
+                job_row = {
                     "due_item_id": di["id"],
                     "reminder_rule_id": rule["id"],
                     "recipient_contact_id": contact_id,
                     "recipient_email": recipient_email,
+                    "recipient_email_normalized": email_normalized,
                     "template_id": rule.get("template_id"),
                     "scheduled_for": scheduled_for_str,
                     "status": "pending",
                     "idempotency_key": idem_key,
+                    "unsubscribable": True,
                     "created_at": now_ts,
                     "updated_at": now_ts,
-                }).execute()
+                }
+                if topic_id:
+                    job_row["communication_topic_id"] = topic_id
+
+                _table("reminder_jobs").insert(job_row).execute()
                 stats["generated"] += 1
 
             except Exception:

@@ -34,7 +34,7 @@ export default function DueItemsPage() {
   }
 
   function orgName(id: string) { return orgs.find(o => o.id === id)?.name ?? "—" }
-  function courseName(id: string) { return courses.find(c => c.id === id)?.label ?? "—" }
+  function courseName(id: string) { return courses.find(c => c.id === id)?.title ?? "—" }
 
   async function handleCompute() {
     setComputing(true)

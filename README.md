@@ -73,7 +73,7 @@ apps/SMA/
 Vues: `vw_due_radar`, `vw_coverage_by_org_type`, `vw_upcoming_reminders`, `vw_overdue_due_items`.
 
 Migration: `supabase/migrations/20260323080000_sma_relance.sql`
-Seed: `supabase/seeds/010_sma_relance.sql`
+Seed: `supabase/seeds/003_sma_relance.sql`
 
 ## Pipeline metier
 

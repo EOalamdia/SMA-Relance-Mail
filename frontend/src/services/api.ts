@@ -9,6 +9,8 @@ import type {
   ReminderRule, ReminderRuleCreate, ReminderRuleUpdate,
   EmailTemplate, EmailTemplateCreate, EmailTemplateUpdate,
   ReminderJob, EmailDelivery,
+  CommunicationTopic, CommunicationTopicCreate, CommunicationTopicUpdate,
+  EmailSubscription, UnsubscribeEvent,
   DashboardSummary, DueRadarRow, CoverageRow, UpcomingReminderRow, OverdueRow,
   ListResponse, ImportResult,
 } from "../types/sma"
@@ -319,9 +321,10 @@ export const trainingCoursesApi = {
 // ---------------------------------------------------------------------------
 
 export const courseApplicabilityApi = {
-  list(orgId?: string, courseId?: string): Promise<ListResponse<CourseApplicability>> {
+  list(orgId?: string, courseId?: string, orgTypeId?: string): Promise<ListResponse<CourseApplicability>> {
     const params = new URLSearchParams()
     if (orgId) params.set("organization_id", orgId)
+    if (orgTypeId) params.set("organization_type_id", orgTypeId)
     if (courseId) params.set("course_id", courseId)
     const qs = params.toString() ? `?${params}` : ""
     return apiRequest<ListResponse<CourseApplicability>>(`/v1/course-applicability${qs}`)
@@ -537,5 +540,71 @@ export const importApi = {
   },
   sessions(file: File): Promise<ImportResult> {
     return apiUpload<ImportResult>("/v1/import/sessions", file)
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Communication Topics
+// ---------------------------------------------------------------------------
+
+export const communicationTopicsApi = {
+  list(): Promise<ListResponse<CommunicationTopic>> {
+    return apiRequest<ListResponse<CommunicationTopic>>("/v1/communication-topics")
+  },
+  get(id: string): Promise<CommunicationTopic> {
+    return apiRequest<CommunicationTopic>(`/v1/communication-topics/${id}`)
+  },
+  create(data: CommunicationTopicCreate): Promise<CommunicationTopic> {
+    return apiRequest<CommunicationTopic>("/v1/communication-topics", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  },
+  update(id: string, data: CommunicationTopicUpdate): Promise<CommunicationTopic> {
+    return apiRequest<CommunicationTopic>(`/v1/communication-topics/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    })
+  },
+  deactivate(id: string): Promise<void> {
+    return apiRequest<void>(`/v1/communication-topics/${id}`, { method: "DELETE" })
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Email Subscriptions
+// ---------------------------------------------------------------------------
+
+export const emailSubscriptionsApi = {
+  list(params?: { is_subscribed?: boolean; communication_topic_id?: string; email?: string }): Promise<ListResponse<EmailSubscription>> {
+    const qs = new URLSearchParams()
+    if (params?.is_subscribed !== undefined) qs.set("is_subscribed", String(params.is_subscribed))
+    if (params?.communication_topic_id) qs.set("communication_topic_id", params.communication_topic_id)
+    if (params?.email) qs.set("email", params.email)
+    const query = qs.toString() ? `?${qs}` : ""
+    return apiRequest<ListResponse<EmailSubscription>>(`/v1/email-subscriptions${query}`)
+  },
+  get(id: string): Promise<EmailSubscription> {
+    return apiRequest<EmailSubscription>(`/v1/email-subscriptions/${id}`)
+  },
+  resubscribe(id: string, reason?: string): Promise<EmailSubscription> {
+    return apiRequest<EmailSubscription>(`/v1/email-subscriptions/${id}/resubscribe`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    })
+  },
+}
+
+// ---------------------------------------------------------------------------
+// SMA – Unsubscribe Events
+// ---------------------------------------------------------------------------
+
+export const unsubscribeEventsApi = {
+  list(params?: { event_type?: string; email?: string }): Promise<ListResponse<UnsubscribeEvent>> {
+    const qs = new URLSearchParams()
+    if (params?.event_type) qs.set("event_type", params.event_type)
+    if (params?.email) qs.set("email", params.email)
+    const query = qs.toString() ? `?${qs}` : ""
+    return apiRequest<ListResponse<UnsubscribeEvent>>(`/v1/unsubscribe-events${query}`)
   },
 }

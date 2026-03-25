@@ -5,17 +5,22 @@ import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-core/components/ui/card"
 
-import type { CourseApplicability, Organization, TrainingCourse } from "../types/sma"
-import { courseApplicabilityApi, organizationsApi, trainingCoursesApi } from "../services/api"
+import type { CourseApplicability, Organization, OrganizationType, TrainingCourse } from "../types/sma"
+import { courseApplicabilityApi, organizationsApi, organizationTypesApi, trainingCoursesApi } from "../services/api"
+
+type ScopeMode = "organization" | "organization_type"
 
 export default function CourseApplicabilityPage() {
   const [items, setItems] = useState<CourseApplicability[]>([])
   const [orgs, setOrgs] = useState<Organization[]>([])
+  const [orgTypes, setOrgTypes] = useState<OrganizationType[]>([])
   const [courses, setCourses] = useState<TrainingCourse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const [scopeMode, setScopeMode] = useState<ScopeMode>("organization")
   const [newOrgId, setNewOrgId] = useState("")
+  const [newOrgTypeId, setNewOrgTypeId] = useState("")
   const [newCourseId, setNewCourseId] = useState("")
   const [creating, setCreating] = useState(false)
 
@@ -24,26 +29,33 @@ export default function CourseApplicabilityPage() {
   async function load() {
     setLoading(true); setError(null)
     try {
-      const [a, o, c] = await Promise.all([
+      const [a, o, ot, c] = await Promise.all([
         courseApplicabilityApi.list(),
         organizationsApi.list(),
+        organizationTypesApi.list(),
         trainingCoursesApi.list(),
       ])
-      setItems(a.items); setOrgs(o.items); setCourses(c.items)
+      setItems(a.items); setOrgs(o.items); setOrgTypes(ot.items); setCourses(c.items)
     } catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
     finally { setLoading(false) }
   }
 
-  function orgName(id: string) { return orgs.find(o => o.id === id)?.name ?? "—" }
-  function courseName(id: string) { return courses.find(c => c.id === id)?.label ?? "—" }
+  function orgName(id: string | null) { return id ? orgs.find(o => o.id === id)?.name ?? "—" : "—" }
+  function orgTypeName(id: string | null) { return id ? orgTypes.find(t => t.id === id)?.name ?? "—" : "—" }
+  function courseName(id: string) { return courses.find(c => c.id === id)?.title ?? "—" }
   function courseCode(id: string) { return courses.find(c => c.id === id)?.code ?? "" }
 
   async function handleCreate(e: React.FormEvent) {
-    e.preventDefault(); if (!newOrgId || !newCourseId) return
+    e.preventDefault()
+    const targetId = scopeMode === "organization" ? newOrgId : newOrgTypeId
+    if (!targetId || !newCourseId) return
     setCreating(true)
     try {
-      const c = await courseApplicabilityApi.create({ organization_id: newOrgId, course_id: newCourseId })
-      setItems(p => [c, ...p])
+      const data = scopeMode === "organization"
+        ? { organization_id: newOrgId, course_id: newCourseId }
+        : { organization_type_id: newOrgTypeId, course_id: newCourseId }
+      const c = await courseApplicabilityApi.create(data)
+      setItems(p => [c, ...p]); setNewOrgId(""); setNewOrgTypeId(""); setNewCourseId("")
     } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
     finally { setCreating(false) }
   }
@@ -62,32 +74,55 @@ export default function CourseApplicabilityPage() {
           <Link2 className="h-6 w-6 text-primary" /> Applicabilité des formations
         </h1>
         <p className="text-muted-foreground max-w-2xl">
-          Associe chaque organisme aux formations qui lui sont applicables. Seules les paires présentes ici génèrent des échéances.
+          Associe chaque organisme ou type d'organisme aux formations qui lui sont applicables. Seules les paires présentes ici génèrent des échéances.
         </p>
       </header>
 
       <Card>
         <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Plus className="h-4 w-4" /> Nouvelle association</CardTitle>
-          <CardDescription>Lier un organisme à une formation.</CardDescription></CardHeader>
+          <CardDescription>Lier un organisme ou un type d'organisme à une formation.</CardDescription></CardHeader>
         <CardContent>
-          <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1 space-y-1">
-              <label className="text-sm font-medium">Organisme <span className="text-destructive">*</span></label>
-              <select value={newOrgId} onChange={e => setNewOrgId(e.target.value)} required
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                <option value="">Choisir…</option>
-                {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
-              </select>
+          <form onSubmit={handleCreate} className="space-y-3">
+            <div className="flex gap-4 items-center">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="radio" name="scope" checked={scopeMode === "organization"} onChange={() => { setScopeMode("organization"); setNewOrgTypeId("") }} />
+                Organisme
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="radio" name="scope" checked={scopeMode === "organization_type"} onChange={() => { setScopeMode("organization_type"); setNewOrgId("") }} />
+                Type d'organisme
+              </label>
             </div>
-            <div className="flex-1 space-y-1">
-              <label className="text-sm font-medium">Formation <span className="text-destructive">*</span></label>
-              <select value={newCourseId} onChange={e => setNewCourseId(e.target.value)} required
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                <option value="">Choisir…</option>
-                {courses.map(c => <option key={c.id} value={c.id}>[{c.code}] {c.label}</option>)}
-              </select>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              {scopeMode === "organization" ? (
+                <div className="flex-1 space-y-1">
+                  <label className="text-sm font-medium">Organisme <span className="text-destructive">*</span></label>
+                  <select value={newOrgId} onChange={e => setNewOrgId(e.target.value)} required
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                    <option value="">Choisir…</option>
+                    {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div className="flex-1 space-y-1">
+                  <label className="text-sm font-medium">Type d'organisme <span className="text-destructive">*</span></label>
+                  <select value={newOrgTypeId} onChange={e => setNewOrgTypeId(e.target.value)} required
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                    <option value="">Choisir…</option>
+                    {orgTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                </div>
+              )}
+              <div className="flex-1 space-y-1">
+                <label className="text-sm font-medium">Formation <span className="text-destructive">*</span></label>
+                <select value={newCourseId} onChange={e => setNewCourseId(e.target.value)} required
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                  <option value="">Choisir…</option>
+                  {courses.map(c => <option key={c.id} value={c.id}>[{c.code}] {c.title}</option>)}
+                </select>
+              </div>
+              <Button type="submit" disabled={creating || !(scopeMode === "organization" ? newOrgId : newOrgTypeId) || !newCourseId}>{creating ? "…" : "Associer"}</Button>
             </div>
-            <Button type="submit" disabled={creating || !newOrgId || !newCourseId}>{creating ? "…" : "Associer"}</Button>
           </form>
         </CardContent>
       </Card>
@@ -101,10 +136,16 @@ export default function CourseApplicabilityPage() {
           <Card key={item.id}>
             <CardContent className="pt-4 flex items-center justify-between">
               <div>
-                <p className="font-medium">{orgName(item.organization_id)}</p>
+                {item.organization_id ? (
+                  <p className="font-medium">{orgName(item.organization_id)}</p>
+                ) : (
+                  <p className="font-medium">
+                    <Badge variant="outline" className="mr-2 text-xs">Type</Badge>
+                    {orgTypeName(item.organization_type_id)}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   <code className="bg-muted px-1 py-0.5 rounded">{courseCode(item.course_id)}</code> {courseName(item.course_id)}
-                  <span className="ml-2">· {item.scope_type}</span>
                 </p>
               </div>
               <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4" /></Button>

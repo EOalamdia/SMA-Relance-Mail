@@ -415,3 +415,91 @@ Succes si:
 
 Consigne de depart:
 Commence par exposer la logique metier et le schema SQL cibles, puis seulement ensuite detaille l'integration technique.
+
+---
+
+==================================================
+17. FONCTIONNALITE SUPPLEMENTAIRE — LIEN DE DESINSCRIPTION
+==================================================
+
+L'application inclut une fonctionnalité complète de désinscription pour tous les messages de campagne, de prospection, de relance marketing ou assimilés.
+
+Cette fonctionnalité n'est pas un simple lien décoratif dans l'email. C'est une brique métier et technique complète, sécurisée, traçable et intégrée au moteur de relance.
+
+Objectifs :
+- inclure un lien de désinscription dans les emails concernés ;
+- permettre à un destinataire de se désinscrire simplement ;
+- empêcher tout nouvel envoi futur non autorisé après désinscription ;
+- journaliser la désinscription ;
+- gérer une liste d'opposition / suppression list durable ;
+- distinguer les messages désinscriptibles des messages strictement transactionnels ;
+- respecter les conventions de sécurité, de routage email et de données personnelles du hub.
+
+==================================================
+18. ARCHITECTURE DE DESINSCRIPTION
+==================================================
+
+Nouvelles tables dans le schema sma_relance :
+- communication_topics : catégories de messages (training_reminders, training_campaigns, newsletters, transactional_notice)
+- email_subscriptions : état d'abonnement par email/contact/topic (suppression list / liste repoussoir)
+- unsubscribe_tokens : tokens opaques hachés pour les liens de désinscription sécurisés
+- unsubscribe_events : journal complet des événements de désinscription/réabonnement
+
+Extensions des tables existantes :
+- email_templates : communication_topic_id, include_unsubscribe_link, unsubscribe_footer_variant
+- reminder_rules : communication_topic_id, suppress_if_unsubscribed
+- reminder_jobs : communication_topic_id, unsubscribe_token_id, unsubscribable, recipient_email_normalized, skipped_reason
+- email_deliveries : communication_topic_id, unsubscribe_link_rendered, unsubscribe_link_clicked_at
+
+==================================================
+19. REGLES METIER DE DESINSCRIPTION
+==================================================
+
+1. Tous les emails de campagne concernés contiennent un lien de désinscription visible.
+2. Le clic sur ce lien permet la désinscription sans authentification (token sécurisé).
+3. Une désinscription empêche les futurs envois sur le périmètre concerné.
+4. La désinscription est prise en compte automatiquement par le moteur de génération des reminder_jobs.
+5. Le système conserve une traçabilité complète (date, cible, périmètre, source, token, état).
+6. Le système gère plusieurs niveaux : global, par topic, par organisation.
+7. Les messages strictement transactionnels (is_unsubscribable=false) ne sont pas bloqués.
+8. Les relances et campagnes excluent automatiquement les contacts désinscrits.
+9. Les opérations sont idempotentes : clic multiple = pas de casse.
+10. Le mécanisme est sécurisé contre la falsification et l'énumération.
+
+==================================================
+20. WORKFLOW DE DESINSCRIPTION
+==================================================
+
+1. Le moteur génère une campagne / relance.
+2. Il vérifie si le message est désinscriptible (via template + rule).
+3. Il vérifie si le destinataire est dans la liste d'opposition (email_subscriptions).
+4. Si oui → job marqué skipped, pas d'envoi.
+5. Si non → génère un token de désinscription sécurisé, injecte le lien dans l'email.
+6. Si le destinataire clique → process_unsubscribe : token validé, subscription mise à jour, événement journalisé.
+7. Tous les futurs envois du même périmètre excluent ce destinataire.
+
+Headers RFC 8058 (one-click unsubscribe) ajoutés aux emails pour Gmail/Yahoo.
+
+==================================================
+21. ENDPOINTS DE DESINSCRIPTION
+==================================================
+
+Public (sans auth) :
+- GET /v1/public/unsubscribe?token=... → traite la désinscription
+- POST /v1/public/unsubscribe/one-click?token=... → RFC 8058 one-click
+
+Admin (auth requise) :
+- CRUD /v1/communication-topics
+- GET /v1/email-subscriptions (filtres: is_subscribed, topic, email)
+- POST /v1/email-subscriptions/{id}/resubscribe (admin réabonnement)
+- GET /v1/unsubscribe-events (journal complet)
+
+==================================================
+22. FRONT-END DESINSCRIPTION
+==================================================
+
+- /unsubscribe : page publique de confirmation (hors MainLayout, pas d'auth)
+- /communication-topics : CRUD admin des topics
+- /email-subscriptions : administration de la suppression list
+- /unsubscribe-events : journal des événements
+- Section "Désinscription" dans la navigation latérale

@@ -19,6 +19,12 @@ from features.reminder_jobs.endpoints import router as jobs_router
 from features.email_deliveries.endpoints import router as deliveries_router
 from features.dashboard.endpoints import router as dashboard_router
 from features.import_data.endpoints import router as import_router
+from features.unsubscribe.endpoints import (
+    public_router as unsubscribe_public_router,
+    topics_router as comm_topics_router,
+    subscriptions_router as subscriptions_router,
+    events_router as unsub_events_router,
+)
 
 app = FastAPI(
     title=settings.app_name,
@@ -54,6 +60,10 @@ app.include_router(jobs_router)
 app.include_router(deliveries_router)
 app.include_router(dashboard_router)
 app.include_router(import_router)
+app.include_router(unsubscribe_public_router)
+app.include_router(comm_topics_router)
+app.include_router(subscriptions_router)
+app.include_router(unsub_events_router)
 
 
 @app.get("/")

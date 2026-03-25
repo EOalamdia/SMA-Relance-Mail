@@ -8,14 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-c
 import type { TrainingCourse } from "../types/sma"
 import { trainingCoursesApi } from "../services/api"
 
-type EditState = { id: string; code: string; label: string; description: string; validity_months: string; reminder_enabled: boolean }
+type EditState = { id: string; code: string; title: string; reminder_frequency_months: string; reminder_disabled: boolean }
 
 export default function TrainingCoursesPage() {
   const [items, setItems] = useState<TrainingCourse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [newCode, setNewCode] = useState("")
-  const [newLabel, setNewLabel] = useState("")
+  const [newTitle, setNewTitle] = useState("")
   const [newValidity, setNewValidity] = useState("")
   const [creating, setCreating] = useState(false)
   const [editState, setEditState] = useState<EditState | null>(null)
@@ -31,14 +31,14 @@ export default function TrainingCoursesPage() {
   }
 
   async function handleCreate(e: React.FormEvent) {
-    e.preventDefault(); if (!newCode.trim() || !newLabel.trim()) return
+    e.preventDefault(); if (!newCode.trim() || !newTitle.trim()) return
     setCreating(true)
     try {
       const c = await trainingCoursesApi.create({
-        code: newCode.trim(), label: newLabel.trim(),
-        validity_months: newValidity ? parseInt(newValidity) : null,
+        code: newCode.trim(), title: newTitle.trim(),
+        reminder_frequency_months: newValidity ? parseInt(newValidity) : null,
       })
-      setItems(p => [c, ...p]); setNewCode(""); setNewLabel(""); setNewValidity("")
+      setItems(p => [c, ...p]); setNewCode(""); setNewTitle(""); setNewValidity("")
     } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
     finally { setCreating(false) }
   }
@@ -53,10 +53,9 @@ export default function TrainingCoursesPage() {
     if (!editState) return; setSaving(true)
     try {
       const u = await trainingCoursesApi.update(id, {
-        code: editState.code.trim(), label: editState.label.trim(),
-        description: editState.description.trim() || null,
-        validity_months: editState.validity_months ? parseInt(editState.validity_months) : null,
-        reminder_enabled: editState.reminder_enabled,
+        code: editState.code.trim(), title: editState.title.trim(),
+        reminder_frequency_months: editState.reminder_frequency_months ? parseInt(editState.reminder_frequency_months) : null,
+        reminder_disabled: editState.reminder_disabled,
       })
       setItems(p => p.map(i => i.id === id ? u : i)); setEditState(null)
     } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
@@ -84,7 +83,7 @@ export default function TrainingCoursesPage() {
             </div>
             <div className="flex-1 space-y-1">
               <label className="text-sm font-medium">Libellé <span className="text-destructive">*</span></label>
-              <input value={newLabel} onChange={e => setNewLabel(e.target.value)} required maxLength={255}
+              <input value={newTitle} onChange={e => setNewTitle(e.target.value)} required maxLength={255}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="w-36 space-y-1">
@@ -92,7 +91,7 @@ export default function TrainingCoursesPage() {
               <input type="number" min={1} value={newValidity} onChange={e => setNewValidity(e.target.value)} placeholder="24"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
-            <Button type="submit" disabled={creating || !newCode.trim() || !newLabel.trim()}>{creating ? "…" : "Créer"}</Button>
+            <Button type="submit" disabled={creating || !newCode.trim() || !newTitle.trim()}>{creating ? "…" : "Créer"}</Button>
           </form>
         </CardContent>
       </Card>
@@ -105,14 +104,13 @@ export default function TrainingCoursesPage() {
         {items.map(item => editState?.id === item.id ? (
           <Card key={item.id} className="border-primary/40">
             <CardContent className="pt-4 space-y-3">
-              <div className="grid gap-3 sm:grid-cols-4">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <input value={editState.code} onChange={e => setEditState(p => p && { ...p, code: e.target.value })} placeholder="Code"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input value={editState.label} onChange={e => setEditState(p => p && { ...p, label: e.target.value })} placeholder="Libellé" className="col-span-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input type="number" min={1} value={editState.validity_months} onChange={e => setEditState(p => p && { ...p, validity_months: e.target.value })} placeholder="Validité (mois)"
+                <input value={editState.title} onChange={e => setEditState(p => p && { ...p, title: e.target.value })} placeholder="Libellé" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                <input type="number" min={1} value={editState.reminder_frequency_months} onChange={e => setEditState(p => p && { ...p, reminder_frequency_months: e.target.value })} placeholder="Validité (mois)"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <textarea value={editState.description} onChange={e => setEditState(p => p && { ...p, description: e.target.value })} placeholder="Description" rows={2} className="col-span-full w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editState.reminder_enabled} onChange={e => setEditState(p => p && { ...p, reminder_enabled: e.target.checked })} /> Relance activée</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!editState.reminder_disabled} onChange={e => setEditState(p => p && { ...p, reminder_disabled: !e.target.checked })} /> Relance activée</label>
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => handleSave(item.id)} disabled={saving}><Save className="h-3 w-3 mr-1" />{saving ? "…" : "Enregistrer"}</Button>
@@ -124,14 +122,14 @@ export default function TrainingCoursesPage() {
           <Card key={item.id}>
             <CardContent className="pt-4 flex items-center justify-between">
               <div>
-                <p className="font-medium"><code className="text-xs bg-muted px-1 py-0.5 rounded mr-2">{item.code}</code>{item.label}</p>
+                <p className="font-medium"><code className="text-xs bg-muted px-1 py-0.5 rounded mr-2">{item.code}</code>{item.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {item.validity_months ? `${item.validity_months} mois` : "Pas de validité"}
-                  {item.reminder_enabled ? " · Relance activée" : " · Relance désactivée"}
+                  {item.reminder_frequency_months ? `${item.reminder_frequency_months} mois` : "Pas de validité"}
+                  {!item.reminder_disabled ? " · Relance activée" : " · Relance désactivée"}
                 </p>
               </div>
               <div className="flex gap-1">
-                <Button size="icon" variant="ghost" onClick={() => setEditState({ id: item.id, code: item.code, label: item.label, description: item.description ?? "", validity_months: item.validity_months?.toString() ?? "", reminder_enabled: item.reminder_enabled })}><Pencil className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => setEditState({ id: item.id, code: item.code, title: item.title, reminder_frequency_months: item.reminder_frequency_months?.toString() ?? "", reminder_disabled: item.reminder_disabled })}><Pencil className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleArchive(item.id)}><Trash2 className="h-4 w-4" /></Button>
               </div>
             </CardContent>

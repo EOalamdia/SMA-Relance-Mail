@@ -42,7 +42,7 @@ export default function TrainingSessionsPage() {
   }
 
   function orgName(id: string) { return orgs.find(o => o.id === id)?.name ?? "—" }
-  function courseName(id: string) { return courses.find(c => c.id === id)?.label ?? "—" }
+  function courseName(id: string) { return courses.find(c => c.id === id)?.title ?? "—" }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault(); if (!newOrgId || !newCourseId || !newDate) return
@@ -99,7 +99,7 @@ export default function TrainingSessionsPage() {
         <select value={filterCourse} onChange={e => setFilterCourse(e.target.value)}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Toutes les formations</option>
-          {courses.map(c => <option key={c.id} value={c.id}>[{c.code}] {c.label}</option>)}
+          {courses.map(c => <option key={c.id} value={c.id}>[{c.code}] {c.title}</option>)}
         </select>
       </div>
 
@@ -121,7 +121,7 @@ export default function TrainingSessionsPage() {
               <select value={newCourseId} onChange={e => setNewCourseId(e.target.value)} required
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Choisir…</option>
-                {courses.map(c => <option key={c.id} value={c.id}>[{c.code}] {c.label}</option>)}
+                {courses.map(c => <option key={c.id} value={c.id}>[{c.code}] {c.title}</option>)}
               </select>
             </div>
             <div className="w-44 space-y-1">

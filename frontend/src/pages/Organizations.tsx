@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-c
 import type { Organization, OrganizationType } from "../types/sma"
 import { organizationsApi, organizationTypesApi } from "../services/api"
 
-type EditState = { id: string; name: string; type_id: string; address: string; phone: string; email: string; notes: string }
+type EditState = { id: string; name: string; organization_type_id: string; address: string; phone: string; email: string; notes: string }
 
 export default function OrganizationsPage() {
   const [items, setItems] = useState<Organization[]>([])
@@ -44,7 +44,7 @@ export default function OrganizationsPage() {
     e.preventDefault(); if (!newName.trim() || !newTypeId) return
     setCreating(true)
     try {
-      const c = await organizationsApi.create({ name: newName.trim(), type_id: newTypeId, email: newEmail.trim() || null })
+      const c = await organizationsApi.create({ name: newName.trim(), organization_type_id: newTypeId, email: newEmail.trim() || null })
       setItems(p => [c, ...p]); setNewName(""); setNewEmail("")
     } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
     finally { setCreating(false) }
@@ -61,7 +61,7 @@ export default function OrganizationsPage() {
     try {
       const u = await organizationsApi.update(id, {
         name: editState.name.trim(),
-        type_id: editState.type_id,
+        organization_type_id: editState.organization_type_id,
         address: editState.address.trim() || null,
         phone: editState.phone.trim() || null,
         email: editState.email.trim() || null,
@@ -132,7 +132,7 @@ export default function OrganizationsPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <input value={editState.name} onChange={e => setEditState(p => p && { ...p, name: e.target.value })} placeholder="Nom" maxLength={255}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <select value={editState.type_id} onChange={e => setEditState(p => p && { ...p, type_id: e.target.value })}
+                <select value={editState.organization_type_id} onChange={e => setEditState(p => p && { ...p, organization_type_id: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                   {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
@@ -154,10 +154,10 @@ export default function OrganizationsPage() {
             <CardContent className="pt-4 flex items-center justify-between">
               <div>
                 <p className="font-medium">{item.name}</p>
-                <p className="text-xs text-muted-foreground">{typeName(item.type_id)} {item.email ? `· ${item.email}` : ""}</p>
+                <p className="text-xs text-muted-foreground">{typeName(item.organization_type_id ?? "")} {item.email ? `· ${item.email}` : ""}</p>
               </div>
               <div className="flex gap-1">
-                <Button size="icon" variant="ghost" onClick={() => setEditState({ id: item.id, name: item.name, type_id: item.type_id, address: item.address ?? "", phone: item.phone ?? "", email: item.email ?? "", notes: item.notes ?? "" })}><Pencil className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => setEditState({ id: item.id, name: item.name, organization_type_id: item.organization_type_id ?? "", address: item.address ?? "", phone: item.phone ?? "", email: item.email ?? "", notes: item.notes ?? "" })}><Pencil className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleArchive(item.id)}><Trash2 className="h-4 w-4" /></Button>
               </div>
             </CardContent>

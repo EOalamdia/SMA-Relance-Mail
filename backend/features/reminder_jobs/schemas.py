@@ -20,6 +20,10 @@ class ReminderJobOut(BaseModel):
     last_attempt_at: datetime | None = None
     error_message: str | None = None
     idempotency_key: str
+    communication_topic_id: UUID | None = None
+    unsubscribable: bool = True
+    recipient_email_normalized: str | None = None
+    skipped_reason: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -34,4 +38,5 @@ class ReminderJobListResponse(BaseModel):
 class GenerateResponse(BaseModel):
     generated: int
     skipped: int
+    skipped_unsubscribed: int = 0
     errors: int

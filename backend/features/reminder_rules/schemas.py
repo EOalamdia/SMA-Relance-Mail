@@ -18,6 +18,8 @@ class ReminderRuleOut(BaseModel):
     trigger_type: str
     recipient_strategy: str
     template_id: UUID | None = None
+    communication_topic_id: UUID | None = None
+    suppress_if_unsubscribed: bool = True
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None = None
@@ -39,6 +41,8 @@ class ReminderRuleCreate(BaseModel):
     trigger_type: Literal["before", "on", "after"] = "before"
     recipient_strategy: Literal["primary", "role", "fallback"] = "primary"
     template_id: UUID | None = None
+    communication_topic_id: UUID | None = None
+    suppress_if_unsubscribed: bool = True
 
 
 class ReminderRuleUpdate(BaseModel):
@@ -50,3 +54,5 @@ class ReminderRuleUpdate(BaseModel):
     trigger_type: Literal["before", "on", "after"] | None = None
     recipient_strategy: Literal["primary", "role", "fallback"] | None = None
     template_id: UUID | None = None
+    communication_topic_id: UUID | None = None
+    suppress_if_unsubscribed: bool | None = None

@@ -15,6 +15,10 @@ import EmailTemplatesPage from "./pages/EmailTemplates"
 import ReminderJobsPage from "./pages/ReminderJobs"
 import EmailDeliveriesPage from "./pages/EmailDeliveries"
 import ImportDataPage from "./pages/ImportData"
+import CommunicationTopicsPage from "./pages/CommunicationTopics"
+import EmailSubscriptionsPage from "./pages/EmailSubscriptions"
+import UnsubscribeEventsPage from "./pages/UnsubscribeEvents"
+import UnsubscribePage from "./pages/Unsubscribe"
 
 const rawBasename = import.meta.env.BASE_URL || "/"
 const basename = rawBasename.endsWith("/") && rawBasename.length > 1 ? rawBasename.slice(0, -1) : rawBasename
@@ -23,6 +27,9 @@ export default function App() {
   return (
     <BrowserRouter basename={basename}>
       <Routes>
+        {/* Public route — no auth, no layout */}
+        <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
@@ -38,6 +45,9 @@ export default function App() {
           <Route path="/reminder-jobs" element={<ReminderJobsPage />} />
           <Route path="/email-deliveries" element={<EmailDeliveriesPage />} />
           <Route path="/import" element={<ImportDataPage />} />
+          <Route path="/communication-topics" element={<CommunicationTopicsPage />} />
+          <Route path="/email-subscriptions" element={<EmailSubscriptionsPage />} />
+          <Route path="/unsubscribe-events" element={<UnsubscribeEventsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

@@ -4,12 +4,13 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class CourseApplicabilityOut(BaseModel):
     id: UUID
-    organization_id: UUID
+    organization_id: UUID | None = None
+    organization_type_id: UUID | None = None
     course_id: UUID
     created_at: datetime
 
@@ -22,5 +23,14 @@ class CourseApplicabilityListResponse(BaseModel):
 
 
 class CourseApplicabilityCreate(BaseModel):
-    organization_id: UUID
+    organization_id: UUID | None = None
+    organization_type_id: UUID | None = None
     course_id: UUID
+
+    @model_validator(mode="after")
+    def exactly_one_scope(self):
+        has_org = self.organization_id is not None
+        has_type = self.organization_type_id is not None
+        if has_org == has_type:
+            raise ValueError("Exactement un parmi organization_id / organization_type_id doit etre renseigne.")
+        return self

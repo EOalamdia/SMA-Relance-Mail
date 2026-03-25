@@ -35,8 +35,8 @@ def compute_due_items(
     stats = {"computed": 0, "created": 0, "updated": 0, "errors": 0}
     today = date.today()
 
-    # 1. Load applicable pairs
-    query = _table("course_applicability").select("organization_id, course_id")
+    # 1. Load applicable pairs (expanded view resolves org-type associations)
+    query = _table("v_course_applicability_expanded").select("organization_id, course_id")
     if organization_id:
         query = query.eq("organization_id", organization_id)
     if course_id:

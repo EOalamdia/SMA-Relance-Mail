@@ -8,10 +8,10 @@ export type SessionStatus = "planned" | "completed" | "cancelled"
 export type SessionSource = "manual" | "import" | "api"
 export type ScopeType = "individual" | "group"
 export type DueStatus = "ok" | "due_soon" | "due" | "overdue" | "missing_policy" | "never_done" | "no_reminder"
-export type OffsetUnit = "days" | "weeks" | "months"
-export type TriggerType = "before_due" | "after_due"
-export type RecipientStrategy = "primary_contact" | "fallback_email" | "both"
-export type JobStatus = "pending" | "sent" | "failed" | "cancelled"
+export type OffsetUnit = "day" | "month"
+export type TriggerType = "before" | "on" | "after"
+export type RecipientStrategy = "primary" | "role" | "fallback"
+export type JobStatus = "pending" | "ready" | "sent" | "failed" | "cancelled" | "skipped"
 export type DeliveryStatus = "sent" | "failed" | "bounced"
 
 // ── Organization Types ────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export interface OrganizationTypeUpdate {
 export interface Organization {
   id: string
   name: string
-  type_id: string
+  organization_type_id: string | null
   address: string | null
   phone: string | null
   email: string | null
@@ -55,7 +55,7 @@ export interface Organization {
 
 export interface OrganizationCreate {
   name: string
-  type_id: string
+  organization_type_id?: string | null
   address?: string | null
   phone?: string | null
   email?: string | null
@@ -64,7 +64,7 @@ export interface OrganizationCreate {
 
 export interface OrganizationUpdate {
   name?: string
-  type_id?: string
+  organization_type_id?: string | null
   address?: string | null
   phone?: string | null
   email?: string | null
@@ -111,11 +111,11 @@ export interface ContactUpdate {
 export interface TrainingCourse {
   id: string
   code: string
-  label: string
-  description: string | null
-  validity_months: number | null
-  reminder_enabled: boolean
+  title: string
+  reminder_frequency_months: number | null
+  reminder_disabled: boolean
   is_active: boolean
+  price_ht: number | null
   archived_at: string | null
   created_at: string
   updated_at: string
@@ -123,35 +123,35 @@ export interface TrainingCourse {
 
 export interface TrainingCourseCreate {
   code: string
-  label: string
-  description?: string | null
-  validity_months?: number | null
-  reminder_enabled?: boolean
+  title: string
+  reminder_frequency_months?: number | null
+  reminder_disabled?: boolean
+  price_ht?: number | null
 }
 
 export interface TrainingCourseUpdate {
   code?: string
-  label?: string
-  description?: string | null
-  validity_months?: number | null
-  reminder_enabled?: boolean
+  title?: string
+  reminder_frequency_months?: number | null
+  reminder_disabled?: boolean
   is_active?: boolean
+  price_ht?: number | null
 }
 
 // ── Course Applicability ──────────────────────────────────────────────────
 
 export interface CourseApplicability {
   id: string
-  organization_id: string
+  organization_id: string | null
+  organization_type_id: string | null
   course_id: string
-  scope_type: ScopeType
   created_at: string
 }
 
 export interface CourseApplicabilityCreate {
-  organization_id: string
+  organization_id?: string | null
+  organization_type_id?: string | null
   course_id: string
-  scope_type?: ScopeType
 }
 
 // ── Training Sessions ─────────────────────────────────────────────────────
@@ -208,41 +208,42 @@ export interface DueItem {
 
 export interface ReminderRule {
   id: string
-  course_id: string | null
-  label: string
+  name: string
+  is_active: boolean
+  offset_sign: number
   offset_value: number
   offset_unit: OffsetUnit
   trigger_type: TriggerType
   recipient_strategy: RecipientStrategy
-  fallback_email: string | null
   template_id: string | null
-  is_active: boolean
+  suppress_if_unsubscribed: boolean
   archived_at: string | null
   created_at: string
   updated_at: string
 }
 
 export interface ReminderRuleCreate {
-  label: string
-  course_id?: string | null
+  name: string
+  is_active?: boolean
+  offset_sign: number
   offset_value: number
   offset_unit: OffsetUnit
   trigger_type: TriggerType
   recipient_strategy?: RecipientStrategy
-  fallback_email?: string | null
   template_id?: string | null
+  suppress_if_unsubscribed?: boolean
 }
 
 export interface ReminderRuleUpdate {
-  label?: string
-  course_id?: string | null
+  name?: string
+  is_active?: boolean
+  offset_sign?: number
   offset_value?: number
   offset_unit?: OffsetUnit
   trigger_type?: TriggerType
   recipient_strategy?: RecipientStrategy
-  fallback_email?: string | null
   template_id?: string | null
-  is_active?: boolean
+  suppress_if_unsubscribed?: boolean
 }
 
 // ── Email Templates ───────────────────────────────────────────────────────
@@ -250,11 +251,13 @@ export interface ReminderRuleUpdate {
 export interface EmailTemplate {
   id: string
   key: string
-  label: string
-  subject: string
-  body_html: string
-  body_text: string | null
+  name: string
+  subject_template: string
+  body_template: string
   is_active: boolean
+  version: number
+  communication_topic_id: string | null
+  include_unsubscribe_link: boolean
   archived_at: string | null
   created_at: string
   updated_at: string
@@ -262,19 +265,21 @@ export interface EmailTemplate {
 
 export interface EmailTemplateCreate {
   key: string
-  label: string
-  subject: string
-  body_html: string
-  body_text?: string | null
+  name: string
+  subject_template: string
+  body_template: string
+  communication_topic_id?: string | null
+  include_unsubscribe_link?: boolean
 }
 
 export interface EmailTemplateUpdate {
   key?: string
-  label?: string
-  subject?: string
-  body_html?: string
-  body_text?: string | null
+  name?: string
+  subject_template?: string
+  body_template?: string
   is_active?: boolean
+  communication_topic_id?: string | null
+  include_unsubscribe_link?: boolean
 }
 
 // ── Reminder Jobs ─────────────────────────────────────────────────────────
@@ -304,6 +309,73 @@ export interface EmailDelivery {
   status: DeliveryStatus
   error_detail: string | null
   sent_at: string
+}
+
+// ── Communication Topics ──────────────────────────────────────────────────
+
+export interface CommunicationTopic {
+  id: string
+  code: string
+  label: string
+  description: string | null
+  is_unsubscribable: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CommunicationTopicCreate {
+  code: string
+  label: string
+  description?: string | null
+  is_unsubscribable?: boolean
+  is_active?: boolean
+}
+
+export interface CommunicationTopicUpdate {
+  label?: string
+  description?: string | null
+  is_unsubscribable?: boolean
+  is_active?: boolean
+}
+
+// ── Email Subscriptions ───────────────────────────────────────────────────
+
+export type UnsubScopeType = "global" | "topic" | "organization" | "campaign"
+export type UnsubSource = "link_click" | "admin" | "import" | "api" | "manual" | "one_click_header"
+export type UnsubEventType = "unsubscribe_clicked" | "unsubscribe_confirmed" | "unsubscribe_already_done" | "resubscribe" | "admin_override"
+
+export interface EmailSubscription {
+  id: string
+  contact_id: string | null
+  email_normalized: string
+  email_hash: string
+  communication_topic_id: string | null
+  scope_type: UnsubScopeType
+  organization_id: string | null
+  is_subscribed: boolean
+  unsubscribed_at: string | null
+  unsubscribed_reason: string | null
+  source: UnsubSource | null
+  created_at: string
+  updated_at: string
+}
+
+// ── Unsubscribe Events ────────────────────────────────────────────────────
+
+export interface UnsubscribeEvent {
+  id: string
+  subscription_id: string | null
+  contact_id: string | null
+  email_normalized: string
+  email_hash: string
+  communication_topic_id: string | null
+  event_type: UnsubEventType
+  source: UnsubSource
+  ip_address: string | null
+  user_agent: string | null
+  metadata: Record<string, unknown> | null
+  created_at: string
 }
 
 // ── Dashboard Views ───────────────────────────────────────────────────────

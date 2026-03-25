@@ -8,14 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-c
 import type { EmailTemplate } from "../types/sma"
 import { emailTemplatesApi } from "../services/api"
 
-type EditState = { id: string; key: string; label: string; subject: string; body_html: string; body_text: string }
+type EditState = { id: string; key: string; name: string; subject_template: string; body_template: string }
 
 export default function EmailTemplatesPage() {
   const [items, setItems] = useState<EmailTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [newKey, setNewKey] = useState("")
-  const [newLabel, setNewLabel] = useState("")
+  const [newName, setNewName] = useState("")
   const [newSubject, setNewSubject] = useState("")
   const [newBody, setNewBody] = useState("")
   const [creating, setCreating] = useState(false)
@@ -32,11 +32,11 @@ export default function EmailTemplatesPage() {
   }
 
   async function handleCreate(e: React.FormEvent) {
-    e.preventDefault(); if (!newKey.trim() || !newLabel.trim() || !newSubject.trim() || !newBody.trim()) return
+    e.preventDefault(); if (!newKey.trim() || !newName.trim() || !newSubject.trim() || !newBody.trim()) return
     setCreating(true)
     try {
-      const c = await emailTemplatesApi.create({ key: newKey.trim(), label: newLabel.trim(), subject: newSubject.trim(), body_html: newBody })
-      setItems(p => [c, ...p]); setNewKey(""); setNewLabel(""); setNewSubject(""); setNewBody("")
+      const c = await emailTemplatesApi.create({ key: newKey.trim(), name: newName.trim(), subject_template: newSubject.trim(), body_template: newBody })
+      setItems(p => [c, ...p]); setNewKey(""); setNewName(""); setNewSubject(""); setNewBody("")
     } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
     finally { setCreating(false) }
   }
@@ -51,8 +51,9 @@ export default function EmailTemplatesPage() {
     if (!editState) return; setSaving(true)
     try {
       const u = await emailTemplatesApi.update(id, {
-        key: editState.key.trim(), label: editState.label.trim(), subject: editState.subject.trim(),
-        body_html: editState.body_html, body_text: editState.body_text.trim() || null,
+        key: editState.key.trim(), name: editState.name.trim(),
+        subject_template: editState.subject_template.trim(),
+        body_template: editState.body_template,
       })
       setItems(p => p.map(i => i.id === id ? u : i)); setEditState(null)
     } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
@@ -84,7 +85,7 @@ export default function EmailTemplatesPage() {
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium">Libellé <span className="text-destructive">*</span></label>
-                <input value={newLabel} onChange={e => setNewLabel(e.target.value)} required maxLength={255}
+                <input value={newName} onChange={e => setNewName(e.target.value)} required maxLength={255}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
             </div>
@@ -94,7 +95,7 @@ export default function EmailTemplatesPage() {
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Corps HTML <span className="text-destructive">*</span></label>
+              <label className="text-sm font-medium">Corps (texte brut ou HTML) <span className="text-destructive">*</span></label>
               <textarea value={newBody} onChange={e => setNewBody(e.target.value)} required rows={6}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
@@ -114,14 +115,12 @@ export default function EmailTemplatesPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <input value={editState.key} onChange={e => setEditState(p => p && { ...p, key: e.target.value })} placeholder="Clé"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input value={editState.label} onChange={e => setEditState(p => p && { ...p, label: e.target.value })} placeholder="Libellé"
+                <input value={editState.name} onChange={e => setEditState(p => p && { ...p, name: e.target.value })} placeholder="Libellé"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
-              <input value={editState.subject} onChange={e => setEditState(p => p && { ...p, subject: e.target.value })} placeholder="Sujet"
+              <input value={editState.subject_template} onChange={e => setEditState(p => p && { ...p, subject_template: e.target.value })} placeholder="Sujet"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-              <textarea value={editState.body_html} onChange={e => setEditState(p => p && { ...p, body_html: e.target.value })} rows={6} placeholder="Corps HTML"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring" />
-              <textarea value={editState.body_text} onChange={e => setEditState(p => p && { ...p, body_text: e.target.value })} rows={3} placeholder="Corps texte (optionnel)"
+              <textarea value={editState.body_template} onChange={e => setEditState(p => p && { ...p, body_template: e.target.value })} rows={6} placeholder="Corps"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring" />
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => handleSave(item.id)} disabled={saving}><Save className="h-3 w-3 mr-1" />{saving ? "…" : "Enregistrer"}</Button>
@@ -133,15 +132,15 @@ export default function EmailTemplatesPage() {
           <Card key={item.id}>
             <CardContent className="pt-4 flex items-center justify-between">
               <div>
-                <p className="font-medium">{item.label}</p>
+                <p className="font-medium">{item.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  <code className="bg-muted px-1 py-0.5 rounded">{item.key}</code> · Sujet : {item.subject}
+                  <code className="bg-muted px-1 py-0.5 rounded">{item.key}</code> · Sujet : {item.subject_template}
                 </p>
               </div>
               <div className="flex gap-1">
                 <Button size="icon" variant="ghost" onClick={() => setEditState({
-                  id: item.id, key: item.key, label: item.label, subject: item.subject,
-                  body_html: item.body_html, body_text: item.body_text ?? "",
+                  id: item.id, key: item.key, name: item.name,
+                  subject_template: item.subject_template, body_template: item.body_template,
                 })}><Pencil className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleArchive(item.id)}><Trash2 className="h-4 w-4" /></Button>
               </div>
