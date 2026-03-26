@@ -38,7 +38,7 @@ class DueItemListResponse(BaseModel):
 
 
 class DueItemCloseRequest(BaseModel):
-    close_reason: str = Field(..., min_length=1, max_length=500)
+    close_reason: str | None = Field(None, min_length=1, max_length=500)
 
 
 class ComputeResponse(BaseModel):

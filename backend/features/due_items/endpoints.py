@@ -73,7 +73,7 @@ def compute_single_due_item(org_id: UUID, crs_id: UUID, _user: UserContext = Dep
 @router.post("/{item_id}/close", response_model=DueItemOut)
 def close_due_item(
     item_id: UUID,
-    payload: DueItemCloseRequest,
+    payload: DueItemCloseRequest | None = None,
     _user: UserContext = Depends(get_current_user),
 ):
     """Fermer manuellement une echeance."""
@@ -84,12 +84,15 @@ def close_due_item(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Echeance deja fermee.")
 
     now_ts = datetime.now(timezone.utc).isoformat()
+    close_reason = "Cloture manuelle"
+    if payload and payload.close_reason and payload.close_reason.strip():
+        close_reason = payload.close_reason.strip()
     response = (
         _table()
         .update({
             "status": "closed",
             "closed_at": now_ts,
-            "close_reason": payload.close_reason,
+            "close_reason": close_reason,
         })
         .eq("id", str(item_id))
         .execute()

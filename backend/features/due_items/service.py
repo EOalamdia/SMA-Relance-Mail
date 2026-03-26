@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 from datetime import date, datetime, timezone
 from dateutil.relativedelta import relativedelta
+from postgrest.exceptions import APIError
 
 from core.supabase import get_schema_table
 
@@ -18,6 +19,106 @@ DUE_SOON_DAYS = 30  # configurable window for "due_soon"
 
 def _table(name: str):
     return get_schema_table(_SCHEMA, name)
+
+
+def _is_missing_relation_error(exc: APIError, relation_name: str) -> bool:
+    payload = str(exc)
+    return "PGRST205" in payload and relation_name in payload
+
+
+def _load_pairs_from_course_applicability(
+    organization_id: str | None = None,
+    course_id: str | None = None,
+) -> list[dict]:
+    """Fallback loader when SQL view v_course_applicability_expanded is unavailable.
+
+    Supports both schema variants:
+    - legacy: course_applicability(organization_id, course_id)
+    - extended: + organization_type_id
+    """
+    raw_rows: list[dict]
+    try:
+        query = _table("course_applicability").select("organization_id, organization_type_id, course_id")
+        if course_id:
+            query = query.eq("course_id", course_id)
+        raw_rows = query.execute().data or []
+    except APIError as exc:
+        # Legacy schema has no organization_type_id column.
+        if "organization_type_id" not in str(exc):
+            raise
+        query = _table("course_applicability").select("organization_id, course_id")
+        if course_id:
+            query = query.eq("course_id", course_id)
+        raw_rows = query.execute().data or []
+        for row in raw_rows:
+            row["organization_type_id"] = None
+
+    org_ids_by_type: dict[str, list[str]] = {}
+    org_type_ids = {
+        row.get("organization_type_id")
+        for row in raw_rows
+        if row.get("organization_type_id")
+    }
+    if org_type_ids:
+        org_query = _table("organizations").select("id, organization_type_id").in_(
+            "organization_type_id",
+            list(org_type_ids),
+        ).is_("archived_at", "null")
+        org_rows = org_query.execute().data or []
+        for org in org_rows:
+            org_type = org.get("organization_type_id")
+            org_id = org.get("id")
+            if not org_type or not org_id:
+                continue
+            org_ids_by_type.setdefault(org_type, []).append(org_id)
+
+    dedup: set[tuple[str, str]] = set()
+    for row in raw_rows:
+        crs_id = row.get("course_id")
+        if not crs_id:
+            continue
+
+        direct_org_id = row.get("organization_id")
+        if direct_org_id:
+            dedup.add((direct_org_id, crs_id))
+            continue
+
+        org_type_id = row.get("organization_type_id")
+        if not org_type_id:
+            continue
+        for expanded_org_id in org_ids_by_type.get(org_type_id, []):
+            dedup.add((expanded_org_id, crs_id))
+
+    pairs = [
+        {"organization_id": org_id, "course_id": crs_id}
+        for org_id, crs_id in dedup
+    ]
+    if organization_id:
+        pairs = [p for p in pairs if p["organization_id"] == organization_id]
+    return pairs
+
+
+def _load_applicability_pairs(
+    organization_id: str | None = None,
+    course_id: str | None = None,
+) -> list[dict]:
+    """Primary loader through SQL view; falls back to table expansion if missing."""
+    query = _table("v_course_applicability_expanded").select("organization_id, course_id")
+    if organization_id:
+        query = query.eq("organization_id", organization_id)
+    if course_id:
+        query = query.eq("course_id", course_id)
+
+    try:
+        return query.execute().data or []
+    except APIError as exc:
+        if not _is_missing_relation_error(exc, "v_course_applicability_expanded"):
+            raise
+        logger.warning(
+            "View sma_relance.v_course_applicability_expanded missing from PostgREST cache. "
+            "Using course_applicability fallback loader."
+        )
+        return _load_pairs_from_course_applicability(organization_id=organization_id, course_id=course_id)
 
 
 def compute_due_items(
@@ -36,12 +137,7 @@ def compute_due_items(
     today = date.today()
 
     # 1. Load applicable pairs (expanded view resolves org-type associations)
-    query = _table("v_course_applicability_expanded").select("organization_id, course_id")
-    if organization_id:
-        query = query.eq("organization_id", organization_id)
-    if course_id:
-        query = query.eq("course_id", course_id)
-    pairs = query.execute().data or []
+    pairs = _load_applicability_pairs(organization_id=organization_id, course_id=course_id)
 
     if not pairs:
         return stats

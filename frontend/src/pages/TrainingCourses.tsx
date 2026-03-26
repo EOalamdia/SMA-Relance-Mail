@@ -23,6 +23,14 @@ export default function TrainingCoursesPage() {
 
   useEffect(() => { load() }, [])
 
+  function normalizeReminderFrequencyMonths(rawValue: string): number | null {
+    const value = rawValue.trim()
+    if (!value) return null
+    const parsed = Number.parseInt(value, 10)
+    if (!Number.isFinite(parsed) || parsed < 0) return null
+    return parsed
+  }
+
   async function load() {
     setLoading(true); setError(null)
     try { const d = await trainingCoursesApi.list(); setItems(d.items) }
@@ -34,9 +42,10 @@ export default function TrainingCoursesPage() {
     e.preventDefault(); if (!newCode.trim() || !newTitle.trim()) return
     setCreating(true)
     try {
+      const reminderFrequencyMonths = normalizeReminderFrequencyMonths(newValidity)
       const c = await trainingCoursesApi.create({
         code: newCode.trim(), title: newTitle.trim(),
-        reminder_frequency_months: newValidity ? parseInt(newValidity) : null,
+        reminder_frequency_months: reminderFrequencyMonths,
       })
       setItems(p => [c, ...p]); setNewCode(""); setNewTitle(""); setNewValidity("")
     } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
@@ -52,9 +61,10 @@ export default function TrainingCoursesPage() {
   async function handleSave(id: string) {
     if (!editState) return; setSaving(true)
     try {
+      const reminderFrequencyMonths = normalizeReminderFrequencyMonths(editState.reminder_frequency_months)
       const u = await trainingCoursesApi.update(id, {
         code: editState.code.trim(), title: editState.title.trim(),
-        reminder_frequency_months: editState.reminder_frequency_months ? parseInt(editState.reminder_frequency_months) : null,
+        reminder_frequency_months: reminderFrequencyMonths,
         reminder_disabled: editState.reminder_disabled,
       })
       setItems(p => p.map(i => i.id === id ? u : i)); setEditState(null)
@@ -88,7 +98,7 @@ export default function TrainingCoursesPage() {
             </div>
             <div className="w-36 space-y-1">
               <label className="text-sm font-medium">Validité (mois)</label>
-              <input type="number" min={1} value={newValidity} onChange={e => setNewValidity(e.target.value)} placeholder="24"
+              <input type="number" min={0} value={newValidity} onChange={e => setNewValidity(e.target.value)} placeholder="24"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <Button type="submit" disabled={creating || !newCode.trim() || !newTitle.trim()}>{creating ? "…" : "Créer"}</Button>
@@ -108,7 +118,7 @@ export default function TrainingCoursesPage() {
                 <input value={editState.code} onChange={e => setEditState(p => p && { ...p, code: e.target.value })} placeholder="Code"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
                 <input value={editState.title} onChange={e => setEditState(p => p && { ...p, title: e.target.value })} placeholder="Libellé" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input type="number" min={1} value={editState.reminder_frequency_months} onChange={e => setEditState(p => p && { ...p, reminder_frequency_months: e.target.value })} placeholder="Validité (mois)"
+                <input type="number" min={0} value={editState.reminder_frequency_months} onChange={e => setEditState(p => p && { ...p, reminder_frequency_months: e.target.value })} placeholder="Validité (mois)"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!editState.reminder_disabled} onChange={e => setEditState(p => p && { ...p, reminder_disabled: !e.target.checked })} /> Relance activée</label>
               </div>
@@ -124,7 +134,7 @@ export default function TrainingCoursesPage() {
               <div>
                 <p className="font-medium"><code className="text-xs bg-muted px-1 py-0.5 rounded mr-2">{item.code}</code>{item.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {item.reminder_frequency_months ? `${item.reminder_frequency_months} mois` : "Pas de validité"}
+                  {item.reminder_frequency_months !== null ? `${item.reminder_frequency_months} mois` : "Pas de validité"}
                   {!item.reminder_disabled ? " · Relance activée" : " · Relance désactivée"}
                 </p>
               </div>

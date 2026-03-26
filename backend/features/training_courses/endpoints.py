@@ -51,7 +51,7 @@ def create_training_course(payload: TrainingCourseCreate, _user: UserContext = D
 
 @router.patch("/{item_id}", response_model=TrainingCourseOut)
 def update_training_course(item_id: UUID, payload: TrainingCourseUpdate, _user: UserContext = Depends(get_current_user)):
-    changes = payload.model_dump(exclude_none=True)
+    changes = payload.model_dump(exclude_unset=True)
     if not changes:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Aucun champ a mettre a jour.")
     exists = _table().select("id").eq("id", str(item_id)).is_("archived_at", "null").limit(1).execute()

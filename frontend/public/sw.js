@@ -1,5 +1,5 @@
 // Minimal Service Worker to satisfy PWA install criteria
-const CACHE_NAME = "sma-pwa-v1";
+const CACHE_NAME = "sma-pwa-v2";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting(); // Force active immediately
@@ -22,8 +22,29 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Network-first by default, with cache fallback
+  const { request } = event
+
+  // Non-GET requests: keep network behavior but always return a Response on failure.
+  if (request.method !== "GET") {
+    event.respondWith(
+      fetch(request).catch(
+        () =>
+          new Response(JSON.stringify({ detail: "Offline" }), {
+            status: 503,
+            statusText: "Service Unavailable",
+            headers: { "Content-Type": "application/json" },
+          }),
+      ),
+    )
+    return
+  }
+
+  // GET requests: network-first with cache fallback.
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request)),
-  );
+    fetch(request).catch(async () => {
+      const cachedResponse = await caches.match(request)
+      if (cachedResponse) return cachedResponse
+      return new Response("Offline", { status: 503, statusText: "Service Unavailable" })
+    }),
+  )
 });

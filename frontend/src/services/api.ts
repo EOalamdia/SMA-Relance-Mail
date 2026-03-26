@@ -387,8 +387,11 @@ export const dueItemsApi = {
   compute(): Promise<{ computed: number }> {
     return apiRequest<{ computed: number }>("/v1/due-items/compute", { method: "POST" })
   },
-  close(id: string): Promise<DueItem> {
-    return apiRequest<DueItem>(`/v1/due-items/${id}/close`, { method: "POST" })
+  close(id: string, closeReason = "Cloture manuelle"): Promise<DueItem> {
+    return apiRequest<DueItem>(`/v1/due-items/${id}/close`, {
+      method: "POST",
+      body: JSON.stringify({ close_reason: closeReason }),
+    })
   },
 }
 
