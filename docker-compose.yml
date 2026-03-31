@@ -77,6 +77,13 @@ services:
       - "traefik.http.routers.${APP_SLUG}-backend.priority=220"
       - "traefik.http.routers.${APP_SLUG}-backend.middlewares=hub_almadia_auth@file,security-headers@file,${APP_SLUG}-api-strip"
       - "traefik.http.services.${APP_SLUG}-backend.loadbalancer.server.port=8000"
+      # Public unsubscribe endpoints (no auth): used from email clients / external clicks.
+      - "traefik.http.routers.${APP_SLUG}-backend-public-unsub.rule=(Host(`${DOMAIN_FRONTEND}`) || Host(`${DOMAIN_API}`)) && PathPrefix(`${FRONTEND_BASE_PATH}/api/v1/public/unsubscribe`)"
+      - "traefik.http.routers.${APP_SLUG}-backend-public-unsub.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.${APP_SLUG}-backend-public-unsub.tls=${TRAEFIK_TLS:-true}"
+      - "traefik.http.routers.${APP_SLUG}-backend-public-unsub.priority=260"
+      - "traefik.http.routers.${APP_SLUG}-backend-public-unsub.middlewares=security-headers@file,${APP_SLUG}-api-strip"
+      - "traefik.http.routers.${APP_SLUG}-backend-public-unsub.service=${APP_SLUG}-backend"
     restart: unless-stopped
 
   sma-frontend:
@@ -124,6 +131,13 @@ services:
       - "traefik.http.routers.${APP_SLUG}.priority=215"
       - "traefik.http.routers.${APP_SLUG}.middlewares=hub_almadia_auth@file,security-headers@file,${APP_SLUG}-frontend-strip"
       - "traefik.http.routers.${APP_SLUG}.service=${APP_SLUG}-frontend"
+      # Public unsubscribe page + assets required to render it without authentication.
+      - "traefik.http.routers.${APP_SLUG}-public-unsub.rule=(Host(`${DOMAIN_FRONTEND}`) || Host(`${DOMAIN_API}`)) && PathPrefix(`${FRONTEND_BASE_PATH}`) && (PathPrefix(`${FRONTEND_BASE_PATH}/unsubscribe`) || PathPrefix(`${FRONTEND_BASE_PATH}/assets`) || PathPrefix(`${FRONTEND_BASE_PATH}/favicon.ico`) || PathPrefix(`${FRONTEND_BASE_PATH}/vite.svg`))"
+      - "traefik.http.routers.${APP_SLUG}-public-unsub.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.${APP_SLUG}-public-unsub.tls=${TRAEFIK_TLS:-true}"
+      - "traefik.http.routers.${APP_SLUG}-public-unsub.priority=260"
+      - "traefik.http.routers.${APP_SLUG}-public-unsub.middlewares=security-headers@file,${APP_SLUG}-frontend-strip"
+      - "traefik.http.routers.${APP_SLUG}-public-unsub.service=${APP_SLUG}-frontend"
 
       # Route publique pour les assets PWA (nécessaire pour l'installation native WebAPK)
       - "traefik.http.routers.${APP_SLUG}-pwa.rule=(Host(`${DOMAIN_FRONTEND}`) || Host(`${DOMAIN_API}`)) && PathPrefix(`${FRONTEND_BASE_PATH}`) && (PathPrefix(`${FRONTEND_BASE_PATH}/manifest.json`) || PathPrefix(`${FRONTEND_BASE_PATH}/sw.js`) || PathPrefix(`${FRONTEND_BASE_PATH}/icon-192.png`) || PathPrefix(`${FRONTEND_BASE_PATH}/icon-512.png`) || PathPrefix(`${FRONTEND_BASE_PATH}/icon.svg`) || PathPrefix(`${FRONTEND_BASE_PATH}/apple-touch-icon.png`))"

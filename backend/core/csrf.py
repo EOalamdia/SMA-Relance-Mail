@@ -19,6 +19,11 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         "/",
         "/health",
         "/api/csp-report",
+        "/v1/reminder-jobs/send-pending",
+        "/v1/reminder-jobs/generate",
+        "/v1/due-items/compute",
+        # Public RFC 8058 endpoint must be callable by mail providers without CSRF cookie/header.
+        "/v1/public/unsubscribe/one-click",
     }
 
     def __init__(self, app: ASGIApp, enabled: bool = True):

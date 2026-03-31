@@ -12,7 +12,8 @@ const DEFAULT_USER: UserProfile = {
 }
 
 const navConfig = buildNavConfig(import.meta.env.DEV)
-const DEFAULT_ICON = "🧩"
+const DEFAULT_ICON = "📧"
+const DEFAULT_TITLE_PREFIX = "SMA"
 
 function deriveDisplayName(email?: string): string {
   const localPart = (email ?? "").split("@")[0] ?? ""
@@ -27,6 +28,22 @@ function deriveDisplayName(email?: string): string {
 
 function isImageIcon(iconUrl: string): boolean {
   return /^(https?:\/\/|\/|data:image\/)/i.test(iconUrl)
+}
+
+function toEmojiFaviconDataUrl(emoji: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${emoji}</text></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
+
+function resolveFaviconHref(iconUrl: string | null): string {
+  const icon = (iconUrl ?? "").trim()
+  if (!icon) {
+    return `${import.meta.env.BASE_URL}icon.svg`
+  }
+  if (isImageIcon(icon)) {
+    return icon
+  }
+  return toEmojiFaviconDataUrl(icon)
 }
 
 function ShellLogo({ appName, iconUrl }: { appName: string; iconUrl: string | null }) {
@@ -93,6 +110,29 @@ function MainLayoutChild() {
       cancelled = true
     }
   }, [defaultAppName])
+
+  useEffect(() => {
+    document.title = shell.appName ? `${shell.appName} | ${DEFAULT_TITLE_PREFIX}` : DEFAULT_TITLE_PREFIX
+    const faviconHref = resolveFaviconHref(shell.iconUrl)
+
+    const ensureFavicon = (selector: string) => {
+      let link = document.querySelector<HTMLLinkElement>(selector)
+      if (!link) {
+        link = document.createElement("link")
+        if (selector.includes("shortcut icon")) {
+          link.rel = "shortcut icon"
+        } else {
+          link.rel = "icon"
+          link.type = "image/svg+xml"
+        }
+        document.head.appendChild(link)
+      }
+      link.href = faviconHref
+    }
+
+    ensureFavicon("link[rel='icon']")
+    ensureFavicon("link[rel='shortcut icon']")
+  }, [shell.appName, shell.iconUrl])
 
   const handleLogout = () => {
     // Shared state for multi-tab logout

@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from core.dependencies import UserContext, get_current_user
+from core.dependencies import UserContext, get_current_user, get_service_auth
 from core.supabase import get_schema_table
 
 from .schemas import GenerateResponse, ReminderJobListResponse, ReminderJobOut
@@ -44,14 +44,14 @@ def get_reminder_job(item_id: UUID, _user: UserContext = Depends(get_current_use
 
 
 @router.post("/generate", response_model=GenerateResponse)
-def generate_jobs(_user: UserContext = Depends(get_current_user)):
+def generate_jobs(_user: UserContext = Depends(get_service_auth)):
     """Generation batch de tous les reminder_jobs (idempotent)."""
     result = generate_reminder_jobs()
     return GenerateResponse(**result)
 
 
 @router.post("/send-pending")
-def send_pending(_user: UserContext = Depends(get_current_user)):
+def send_pending(_user: UserContext = Depends(get_service_auth)):
     """Envoyer les jobs pending dont scheduled_for <= now."""
     result = send_pending_jobs()
     return result

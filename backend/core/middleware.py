@@ -154,6 +154,10 @@ def setup_security_middleware(app) -> None:
         "127.0.0.1",
         "backend",
         f"backend:{settings.api_port}",
+        f"{settings.app_slug}-backend",
+        f"{settings.app_slug}-backend:{settings.api_port}",
+        "sma-backend",
+        f"sma-backend:{settings.api_port}",
     ]
 
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)

@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from core.dependencies import UserContext, get_current_user
+from core.dependencies import UserContext, get_current_user, get_service_auth
 from core.supabase import get_schema_table
 
 from .schemas import ComputeResponse, DueItemCloseRequest, DueItemListResponse, DueItemOut
@@ -50,14 +50,14 @@ def get_due_item(item_id: UUID, _user: UserContext = Depends(get_current_user)):
 
 
 @router.post("/compute", response_model=ComputeResponse)
-def compute_all_due_items(_user: UserContext = Depends(get_current_user)):
+def compute_all_due_items(_user: UserContext = Depends(get_service_auth)):
     """Recalcul global de toutes les echeances."""
     result = compute_due_items()
     return ComputeResponse(**result)
 
 
 @router.post("/compute/{org_id}", response_model=ComputeResponse)
-def compute_org_due_items(org_id: UUID, _user: UserContext = Depends(get_current_user)):
+def compute_org_due_items(org_id: UUID, _user: UserContext = Depends(get_service_auth)):
     """Recalcul cible pour une organisation."""
     result = compute_due_items(organization_id=str(org_id))
     return ComputeResponse(**result)

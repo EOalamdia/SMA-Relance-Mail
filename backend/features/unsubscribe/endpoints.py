@@ -40,6 +40,24 @@ def _table(name: str):
 public_router = APIRouter(prefix="/v1/public/unsubscribe", tags=["Unsubscribe (Public)"])
 
 
+def _extract_client_ip(request: Request | None) -> str | None:
+    """Best-effort client IP extraction behind reverse proxies."""
+    if not request:
+        return None
+
+    forwarded_for = request.headers.get("x-forwarded-for", "").strip()
+    if forwarded_for:
+        first_ip = forwarded_for.split(",")[0].strip()
+        if first_ip:
+            return first_ip
+
+    real_ip = request.headers.get("x-real-ip", "").strip()
+    if real_ip:
+        return real_ip
+
+    return request.client.host if request.client else None
+
+
 @public_router.get("", response_model=UnsubscribeConfirmResponse)
 def public_unsubscribe_get(
     token: str = Query(..., min_length=10, max_length=200),
@@ -50,7 +68,7 @@ def public_unsubscribe_get(
     Processes the unsubscribe and returns a confirmation.
     This is the endpoint rendered in email links.
     """
-    ip_address = request.client.host if request and request.client else None
+    ip_address = _extract_client_ip(request)
     user_agent = request.headers.get("user-agent", "")[:500] if request else None
 
     result = process_unsubscribe(
@@ -70,7 +88,7 @@ async def public_one_click_unsubscribe(
 
     Used by Gmail/Yahoo mail clients via List-Unsubscribe-Post header.
     """
-    ip_address = request.client.host if request.client else None
+    ip_address = _extract_client_ip(request)
     user_agent = request.headers.get("user-agent", "")[:500]
 
     result = process_unsubscribe(

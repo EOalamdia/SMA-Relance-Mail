@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     supabase_anon_key: str = Field(..., env="SUPABASE_ANON_KEY")
     supabase_service_role_key: str = Field(default="", env="SUPABASE_SERVICE_ROLE_KEY")
 
+    scheduler_key: str = Field(default="", env="SCHEDULER_KEY")
+
     api_host: str = Field(default="0.0.0.0", env="API_HOST")
     api_port: int = Field(default=8000, env="API_PORT")
     api_debug: bool = Field(default=False, env="API_DEBUG")

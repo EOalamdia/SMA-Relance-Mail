@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 # Set required env vars before import
@@ -59,7 +60,8 @@ class TestBuildUnsubscribeUrl(unittest.TestCase):
     def test_url_format(self):
         from features.unsubscribe.service import build_unsubscribe_url
         url = build_unsubscribe_url("test-token-abc")
-        self.assertIn("/sma-relance-mail/unsubscribe?token=test-token-abc", url)
+        base_path = os.environ.get("FRONTEND_BASE_PATH", "")
+        self.assertIn(f"{base_path}/unsubscribe?token=test-token-abc", url)
         self.assertTrue(url.startswith("http"))
 
     def test_url_no_internal_ids(self):
@@ -150,6 +152,34 @@ class TestIsEmailUnsubscribed(unittest.TestCase):
 
         result = is_email_unsubscribed("test@example.com")
         self.assertTrue(result)
+
+
+class TestUnsubscribeClientIpExtraction(unittest.TestCase):
+    """Test forwarded client IP extraction for public unsubscribe endpoints."""
+
+    def test_prefers_x_forwarded_for_first_ip(self):
+        from features.unsubscribe.endpoints import _extract_client_ip
+
+        req = SimpleNamespace(
+            headers={"x-forwarded-for": "203.0.113.10, 10.0.0.1"},
+            client=SimpleNamespace(host="127.0.0.1"),
+        )
+        self.assertEqual(_extract_client_ip(req), "203.0.113.10")
+
+    def test_falls_back_to_x_real_ip(self):
+        from features.unsubscribe.endpoints import _extract_client_ip
+
+        req = SimpleNamespace(
+            headers={"x-real-ip": "198.51.100.22"},
+            client=SimpleNamespace(host="127.0.0.1"),
+        )
+        self.assertEqual(_extract_client_ip(req), "198.51.100.22")
+
+    def test_falls_back_to_client_host(self):
+        from features.unsubscribe.endpoints import _extract_client_ip
+
+        req = SimpleNamespace(headers={}, client=SimpleNamespace(host="172.18.0.12"))
+        self.assertEqual(_extract_client_ip(req), "172.18.0.12")
 
 
 if __name__ == "__main__":
