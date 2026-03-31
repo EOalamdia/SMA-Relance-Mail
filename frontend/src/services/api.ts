@@ -12,7 +12,7 @@ import type {
   CommunicationTopic, CommunicationTopicCreate, CommunicationTopicUpdate,
   EmailSubscription, UnsubscribeEvent,
   DashboardSummary, DueRadarRow, CoverageRow, UpcomingReminderRow, OverdueRow,
-  ListResponse, ImportResult,
+  ListResponse,
 } from "../types/sma"
 
 const API_BASE_URL = import.meta.env.VITE_API_URL
@@ -507,42 +507,6 @@ export const dashboardApi = {
   },
   overdue(): Promise<OverdueRow[]> {
     return apiRequest<OverdueRow[]>("/v1/dashboard/overdue")
-  },
-}
-
-// ---------------------------------------------------------------------------
-// SMA – Import (multipart/form-data – no JSON Content-Type)
-// ---------------------------------------------------------------------------
-
-async function apiUpload<T>(path: string, file: File): Promise<T> {
-  const headers = new Headers()
-  const csrf = getCsrfTokenFromCookie()
-  if (csrf) headers.set("X-CSRF-Token", csrf)
-
-  const form = new FormData()
-  form.append("file", file)
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: "POST",
-    headers,
-    body: form,
-    credentials: "include",
-  })
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({ detail: `${response.status}` }))
-    throw new Error(typeof payload.detail === "string" ? payload.detail : JSON.stringify(payload.detail))
-  }
-
-  return response.json() as Promise<T>
-}
-
-export const importApi = {
-  organizations(file: File): Promise<ImportResult> {
-    return apiUpload<ImportResult>("/v1/import/organizations", file)
-  },
-  sessions(file: File): Promise<ImportResult> {
-    return apiUpload<ImportResult>("/v1/import/sessions", file)
   },
 }
 

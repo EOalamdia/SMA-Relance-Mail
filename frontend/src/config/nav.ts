@@ -1,6 +1,6 @@
 import {
   BarChart3, Building2, CalendarDays, ClipboardList, GraduationCap, Home, Link2,
-  Mail, MailCheck, MailX, MessageSquare, Bell, Send, Tags, Target, Upload, Users,
+  Mail, MailCheck, MailX, MessageSquare, Bell, Send, Tags, Target, Users,
 } from "lucide-react"
 
 import type { NavSection } from "@ui-shell/types/nav"
@@ -53,7 +53,6 @@ export function buildNavConfig(_isDev: boolean): NavSection[] {
       items: [
         { title: "Règles de relance", href: "/reminder-rules", icon: Bell },
         { title: "Templates email", href: "/email-templates", icon: Mail },
-        { title: "Import CSV", href: "/import", icon: Upload },
       ],
     },
   ]

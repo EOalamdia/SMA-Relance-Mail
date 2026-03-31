@@ -31,7 +31,6 @@ apps/SMA/
       email_templates/            # CRUD /v1/email-templates
       email_deliveries/           # Read-only /v1/email-deliveries
       dashboard/                  # 5 endpoints /v1/dashboard/*
-      import_data/                # CSV upload /v1/import/*
     main.py
   frontend/
     packages/
@@ -41,7 +40,7 @@ apps/SMA/
     src/
       config/nav.ts               # 5 sections: Accueil, Referentiels, Formation, Relances, Parametrage
       pages/                      # 12 pages metier + Home + Dashboard
-      services/api.ts             # 13 API objects + apiUpload
+      services/api.ts             # API objects backend + helpers HTTP
       types/sma.ts                # interfaces TypeScript pour toutes les entites
       MainLayout.tsx
   scheduler/

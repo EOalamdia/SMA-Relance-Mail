@@ -431,11 +431,3 @@ export interface ListResponse<T> {
   items: T[]
   count: number
 }
-
-// ── Import response ───────────────────────────────────────────────────────
-
-export interface ImportResult {
-  inserted: number
-  skipped: number
-  errors: string[]
-}

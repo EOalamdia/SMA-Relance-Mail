@@ -49,7 +49,6 @@ Ce document sert de memo operationnel pour tout agent AI qui reprend `apps/SMA`.
 | `reminder_jobs` | `/v1/reminder-jobs` | List/Generate/Send/Cancel + `service.py` |
 | `email_deliveries` | `/v1/email-deliveries` | Read-only |
 | `dashboard` | `/v1/dashboard/*` | 5 endpoints (summary, radar, coverage, upcoming, overdue) |
-| `import_data` | `/v1/import/*` | CSV upload orgs + sessions |
 
 ### Services critiques
 
@@ -70,14 +69,14 @@ table = get_schema_table("sma_relance", "table_name")
 
 Dashboard, OrganizationTypes, Organizations, Contacts, TrainingCourses,
 CourseApplicability, TrainingSessions, DueItems, ReminderRules, EmailTemplates,
-ReminderJobs, EmailDeliveries, ImportData, Home.
+ReminderJobs, EmailDeliveries, Home.
 
 ### API client (`services/api.ts`)
 
-13 API objects : organizationTypesApi, organizationsApi, contactsApi,
+API objects : organizationTypesApi, organizationsApi, contactsApi,
 trainingCoursesApi, courseApplicabilityApi, trainingSessionsApi, dueItemsApi,
 reminderRulesApi, emailTemplatesApi, reminderJobsApi, emailDeliveriesApi,
-dashboardApi, importApi.
+dashboardApi.
 
 ### Types (`types/sma.ts`)
 
@@ -123,5 +122,3 @@ Container Docker independant, 3 threads daemon :
 - Email via Gmail SMTP avec fallback log-only.
 - Scheduler par container cron (pas Celery/APScheduler).
 - RBAC simple via ForwardAuth (pas de roles granulaires).
-- Import CSV pour migration initiale depuis Excel.
-

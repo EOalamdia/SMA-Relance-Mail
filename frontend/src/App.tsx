@@ -14,7 +14,6 @@ import ReminderRulesPage from "./pages/ReminderRules"
 import EmailTemplatesPage from "./pages/EmailTemplates"
 import ReminderJobsPage from "./pages/ReminderJobs"
 import EmailDeliveriesPage from "./pages/EmailDeliveries"
-import ImportDataPage from "./pages/ImportData"
 import CommunicationTopicsPage from "./pages/CommunicationTopics"
 import EmailSubscriptionsPage from "./pages/EmailSubscriptions"
 import UnsubscribeEventsPage from "./pages/UnsubscribeEvents"
@@ -44,7 +43,6 @@ export default function App() {
           <Route path="/email-templates" element={<EmailTemplatesPage />} />
           <Route path="/reminder-jobs" element={<ReminderJobsPage />} />
           <Route path="/email-deliveries" element={<EmailDeliveriesPage />} />
-          <Route path="/import" element={<ImportDataPage />} />
           <Route path="/communication-topics" element={<CommunicationTopicsPage />} />
           <Route path="/email-subscriptions" element={<EmailSubscriptionsPage />} />
           <Route path="/unsubscribe-events" element={<UnsubscribeEventsPage />} />
