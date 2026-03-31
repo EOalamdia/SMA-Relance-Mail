@@ -4,6 +4,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from postgrest.exceptions import APIError
 
 from core.dependencies import UserContext, get_current_user
 from core.supabase import get_schema_table
@@ -24,6 +25,13 @@ def _table():
     return get_schema_table(_SCHEMA, _TABLE)
 
 
+def _is_missing_column_error(exc: APIError, column_name: str) -> bool:
+    payload = str(exc)
+    if column_name not in payload:
+        return False
+    return "PGRST204" in payload or "42703" in payload or "does not exist" in payload
+
+
 @router.get("", response_model=CourseApplicabilityListResponse)
 def list_course_applicability(
     organization_id: UUID | None = Query(None),
@@ -38,8 +46,32 @@ def list_course_applicability(
         query = query.eq("organization_type_id", str(organization_type_id))
     if course_id:
         query = query.eq("course_id", str(course_id))
-    response = query.order("created_at", desc=True).execute()
-    rows = response.data or []
+    try:
+        response = query.order("created_at", desc=True).execute()
+        rows = response.data or []
+    except APIError as exc:
+        if not (organization_type_id and _is_missing_column_error(exc, "organization_type_id")):
+            raise
+
+        org_rows = (
+            get_schema_table(_SCHEMA, "organizations")
+            .select("id")
+            .eq("organization_type_id", str(organization_type_id))
+            .is_("archived_at", "null")
+            .execute()
+            .data
+            or []
+        )
+        org_ids = [row["id"] for row in org_rows if row.get("id")]
+        if not org_ids:
+            rows = []
+        else:
+            fallback_query = _table().select("*").in_("organization_id", org_ids)
+            if organization_id:
+                fallback_query = fallback_query.eq("organization_id", str(organization_id))
+            if course_id:
+                fallback_query = fallback_query.eq("course_id", str(course_id))
+            rows = fallback_query.order("created_at", desc=True).execute().data or []
     return CourseApplicabilityListResponse(items=[CourseApplicabilityOut(**r) for r in rows], count=len(rows))
 
 
@@ -50,7 +82,18 @@ def create_course_applicability(payload: CourseApplicabilityCreate, _user: UserC
         data["organization_id"] = str(payload.organization_id)
     if payload.organization_type_id:
         data["organization_type_id"] = str(payload.organization_type_id)
-    response = _table().insert(data).execute()
+    try:
+        response = _table().insert(data).execute()
+    except APIError as exc:
+        if payload.organization_type_id and _is_missing_column_error(exc, "organization_type_id"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "La base actuelle ne supporte pas encore l'applicabilite par type d'organisme. "
+                    "Associez la formation a un organisme precis, ou appliquez la migration SMA la plus recente."
+                ),
+            ) from exc
+        raise
     if not response.data:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Echec de la creation.")
     return CourseApplicabilityOut(**response.data[0])

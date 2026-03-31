@@ -97,7 +97,7 @@ export default function TrainingCoursesPage() {
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="w-36 space-y-1">
-              <label className="text-sm font-medium">Validité (mois)</label>
+              <label className="text-sm font-medium">Validité de la formation en mois</label>
               <input type="number" min={0} value={newValidity} onChange={e => setNewValidity(e.target.value)} placeholder="24"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
@@ -118,7 +118,7 @@ export default function TrainingCoursesPage() {
                 <input value={editState.code} onChange={e => setEditState(p => p && { ...p, code: e.target.value })} placeholder="Code"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
                 <input value={editState.title} onChange={e => setEditState(p => p && { ...p, title: e.target.value })} placeholder="Libellé" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input type="number" min={0} value={editState.reminder_frequency_months} onChange={e => setEditState(p => p && { ...p, reminder_frequency_months: e.target.value })} placeholder="Validité (mois)"
+                <input type="number" min={0} value={editState.reminder_frequency_months} onChange={e => setEditState(p => p && { ...p, reminder_frequency_months: e.target.value })} placeholder="Validité de la formation en mois"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!editState.reminder_disabled} onChange={e => setEditState(p => p && { ...p, reminder_disabled: !e.target.checked })} /> Relance activée</label>
               </div>

@@ -10,6 +10,7 @@ import smtplib
 from datetime import date, datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import make_msgid
 
 from core.supabase import get_schema_table
 
@@ -27,6 +28,16 @@ SMTP_FROM = os.environ.get("SMTP_FROM", SMTP_USER)
 
 def _table(name: str):
     return get_schema_table(_SCHEMA, name)
+
+
+def _smtp_message_id_domain() -> str | None:
+    for value in (SMTP_FROM, SMTP_USER):
+        if not value or "@" not in value:
+            continue
+        domain = value.split("@", 1)[1].strip().strip(">").strip()
+        if domain:
+            return domain
+    return None
 
 
 def _render_template(template_text: str, variables: dict) -> str:
@@ -137,6 +148,7 @@ def send_reminder_email(job: dict) -> bool:
 
     recipient = job["recipient_email"]
     now_ts = datetime.now(timezone.utc).isoformat()
+    provider_message_id: str | None = None
 
     # Send via SMTP
     try:
@@ -150,6 +162,9 @@ def send_reminder_email(job: dict) -> bool:
         msg["From"] = SMTP_FROM
         msg["To"] = recipient
         msg["Subject"] = subject
+        msgid_domain = _smtp_message_id_domain()
+        provider_message_id = make_msgid(domain=msgid_domain) if msgid_domain else make_msgid()
+        msg["Message-ID"] = provider_message_id
 
         # Add RFC 8058 List-Unsubscribe headers for one-click unsubscribe
         for header_name, header_value in unsub_headers.items():
@@ -162,13 +177,13 @@ def send_reminder_email(job: dict) -> bool:
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.send_message(msg)
 
-        _log_delivery(job["id"], "gmail_smtp", None, "sent", now_ts, None,
+        _log_delivery(job["id"], "gmail_smtp", provider_message_id, "sent", now_ts, None,
                       unsub_link_rendered=unsub_url is not None)
         return True
 
     except Exception as exc:
         logger.exception("SMTP send failed for job %s", job["id"])
-        _log_delivery(job["id"], "gmail_smtp", None, "failed", None, {"error": str(exc)[:500]},
+        _log_delivery(job["id"], "gmail_smtp", provider_message_id, "failed", None, {"error": str(exc)[:500]},
                       unsub_link_rendered=unsub_url is not None)
         return False
 
