@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from core.dependencies import UserContext, get_current_user
 from core.supabase import get_schema_table
@@ -27,10 +27,21 @@ def _table():
 
 
 @router.get("", response_model=ReminderRuleListResponse)
-def list_reminder_rules(_user: UserContext = Depends(get_current_user)):
-    response = _table().select("*").is_("archived_at", "null").order("name").execute()
+def list_reminder_rules(
+    search: str | None = Query(None),
+    limit: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0),
+    _user: UserContext = Depends(get_current_user),
+):
+    query = _table().select("*", count="exact").is_("archived_at", "null")
+    if search:
+        query = query.ilike("name", f"%{search}%")
+    query = query.order("name")
+    if limit > 0:
+        query = query.range(offset, offset + limit - 1)
+    response = query.execute()
     rows = response.data or []
-    return ReminderRuleListResponse(items=[ReminderRuleOut(**r) for r in rows], count=len(rows))
+    return ReminderRuleListResponse(items=[ReminderRuleOut(**r) for r in rows], count=response.count or 0)
 
 
 @router.get("/{item_id}", response_model=ReminderRuleOut)

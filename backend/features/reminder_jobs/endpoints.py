@@ -25,14 +25,22 @@ def _table():
 @router.get("", response_model=ReminderJobListResponse)
 def list_reminder_jobs(
     job_status: str | None = Query(None, alias="status"),
+    search: str | None = Query(None),
+    limit: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0),
     _user: UserContext = Depends(get_current_user),
 ):
-    query = _table().select("*")
+    query = _table().select("*", count="exact")
     if job_status:
         query = query.eq("status", job_status)
-    response = query.order("scheduled_for", desc=True).execute()
+    if search:
+        query = query.ilike("recipient_email", f"%{search}%")
+    query = query.order("scheduled_for", desc=True)
+    if limit > 0:
+        query = query.range(offset, offset + limit - 1)
+    response = query.execute()
     rows = response.data or []
-    return ReminderJobListResponse(items=[ReminderJobOut(**r) for r in rows], count=len(rows))
+    return ReminderJobListResponse(items=[ReminderJobOut(**r) for r in rows], count=response.count or 0)
 
 
 @router.get("/{item_id}", response_model=ReminderJobOut)

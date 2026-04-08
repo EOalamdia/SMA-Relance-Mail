@@ -24,16 +24,24 @@ def _table():
 def list_email_deliveries(
     reminder_job_id: UUID | None = Query(None),
     delivery_status: str | None = Query(None, alias="status"),
+    search: str | None = Query(None),
+    limit: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0),
     _user: UserContext = Depends(get_current_user),
 ):
-    query = _table().select("*")
+    query = _table().select("*", count="exact")
     if reminder_job_id:
         query = query.eq("reminder_job_id", str(reminder_job_id))
     if delivery_status:
         query = query.eq("status", delivery_status)
-    response = query.order("created_at", desc=True).execute()
+    if search:
+        query = query.or_(f"provider.ilike.%{search}%,provider_message_id.ilike.%{search}%")
+    query = query.order("created_at", desc=True)
+    if limit > 0:
+        query = query.range(offset, offset + limit - 1)
+    response = query.execute()
     rows = response.data or []
-    return EmailDeliveryListResponse(items=[EmailDeliveryOut(**r) for r in rows], count=len(rows))
+    return EmailDeliveryListResponse(items=[EmailDeliveryOut(**r) for r in rows], count=response.count or 0)
 
 
 @router.get("/{item_id}", response_model=EmailDeliveryOut)

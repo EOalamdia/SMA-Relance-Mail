@@ -79,7 +79,7 @@ export default function UnsubscribePage() {
 
           {(status === "success" || status === "already_done") && (
             <p className="text-xs text-muted-foreground mt-2">
-              Vous ne recevrez plus d'emails de ce type. Si cette action a été faite par erreur, contactez l'administrateur.
+              Vous ne recevrez plus d'e-mails de ce type. Si cette action a été faite par erreur, contactez l'administrateur.
             </p>
           )}
 
@@ -91,7 +91,7 @@ export default function UnsubscribePage() {
 
           <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
             <MailX className="h-4 w-4" />
-            <span>Gestion des abonnements email</span>
+            <span>Gestion des abonnements e-mail</span>
           </div>
         </CardContent>
       </Card>

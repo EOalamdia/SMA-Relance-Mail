@@ -4,11 +4,14 @@ import { GraduationCap, Pencil, Plus, Save, Trash2, X } from "lucide-react"
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-core/components/ui/card"
+import { TableToolbar, TablePagination } from "@ui-core/components/ui/table"
 
 import type { TrainingCourse } from "../types/sma"
 import { trainingCoursesApi } from "../services/api"
 
 type EditState = { id: string; code: string; title: string; reminder_frequency_months: string; reminder_disabled: boolean }
+
+const PAGE_SIZE = 25
 
 export default function TrainingCoursesPage() {
   const [items, setItems] = useState<TrainingCourse[]>([])
@@ -20,8 +23,14 @@ export default function TrainingCoursesPage() {
   const [creating, setCreating] = useState(false)
   const [editState, setEditState] = useState<EditState | null>(null)
   const [saving, setSaving] = useState(false)
+  const [search, setSearch] = useState("")
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
+  }, [search, page])
 
   function normalizeReminderFrequencyMonths(rawValue: string): number | null {
     const value = rawValue.trim()
@@ -33,7 +42,10 @@ export default function TrainingCoursesPage() {
 
   async function load() {
     setLoading(true); setError(null)
-    try { const d = await trainingCoursesApi.list(); setItems(d.items) }
+    try {
+      const d = await trainingCoursesApi.list({ search: search || undefined, limit: PAGE_SIZE, offset: page * PAGE_SIZE })
+      setItems(d.items); setTotalCount(d.count)
+    }
     catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
     finally { setLoading(false) }
   }
@@ -106,6 +118,11 @@ export default function TrainingCoursesPage() {
         </CardContent>
       </Card>
 
+      <TableToolbar
+        onSearch={(v) => { setSearch(v); setPage(0) }}
+        searchPlaceholder="Rechercher une formation…"
+      />
+
       <div className="space-y-3">
         {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
         {error && <Card className="border-destructive/50"><CardContent className="pt-4"><p className="text-sm text-destructive">{error}</p><Button variant="outline" size="sm" className="mt-2" onClick={load}>Réessayer</Button></CardContent></Card>}
@@ -146,6 +163,14 @@ export default function TrainingCoursesPage() {
           </Card>
         ))}
       </div>
+
+      <TablePagination
+        pageIndex={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        pageCount={Math.ceil(totalCount / PAGE_SIZE)}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

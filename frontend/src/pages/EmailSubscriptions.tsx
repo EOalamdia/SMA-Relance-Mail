@@ -1,31 +1,39 @@
 import { useEffect, useState } from "react"
-import { MailX, RefreshCw, Search } from "lucide-react"
+import { MailX, RefreshCw } from "lucide-react"
 
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@ui-core/components/ui/card"
+import { TableToolbar, TablePagination } from "@ui-core/components/ui/table"
 
 import type { EmailSubscription } from "../types/sma"
 import { emailSubscriptionsApi } from "../services/api"
+
+const PAGE_SIZE = 25
 
 export default function EmailSubscriptionsPage() {
   const [items, setItems] = useState<EmailSubscription[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filterSubscribed, setFilterSubscribed] = useState<string>("")
-  const [searchEmail, setSearchEmail] = useState("")
+  const [search, setSearch] = useState("")
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
-  useEffect(() => { load() }, [filterSubscribed])
+  useEffect(() => {
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
+  }, [search, page, filterSubscribed])
 
   async function load() {
     setLoading(true); setError(null)
     try {
-      const params: Record<string, unknown> = {}
+      const params: Parameters<typeof emailSubscriptionsApi.list>[0] = { limit: PAGE_SIZE, offset: page * PAGE_SIZE }
       if (filterSubscribed === "true") params.is_subscribed = true
       if (filterSubscribed === "false") params.is_subscribed = false
-      if (searchEmail) params.email = searchEmail
-      const d = await emailSubscriptionsApi.list(params as never)
-      setItems(d.items)
+      if (search) params.email = search
+      const d = await emailSubscriptionsApi.list(params)
+      setItems(d.items); setTotalCount(d.count)
     } catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
     finally { setLoading(false) }
   }
@@ -39,8 +47,14 @@ export default function EmailSubscriptionsPage() {
     } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
   }
 
-  function handleSearch() {
-    load()
+  function scopeTypeLabel(scopeType: string): string {
+    if (scopeType === "individual") return "Individuel"
+    if (scopeType === "group") return "Groupe"
+    if (scopeType === "global") return "Global"
+    if (scopeType === "topic") return "Sujet"
+    if (scopeType === "organization") return "Organisme"
+    if (scopeType === "campaign") return "Campagne"
+    return scopeType
   }
 
   return (
@@ -48,27 +62,26 @@ export default function EmailSubscriptionsPage() {
       <header className="space-y-2">
         <Badge variant="gradient">Désinscription</Badge>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <MailX className="h-6 w-6 text-primary" /> Abonnements email
+          <MailX className="h-6 w-6 text-primary" /> Abonnements e-mail
         </h1>
         <p className="text-muted-foreground max-w-2xl">
-          Liste repoussoir / suppression list — état d'abonnement par contact et par type de communication.
+          Liste de blocage — état d'abonnement par contact et par type de communication.
         </p>
       </header>
 
       <div className="flex flex-wrap items-center gap-3">
-        <select value={filterSubscribed} onChange={e => setFilterSubscribed(e.target.value)}
+        <select value={filterSubscribed} onChange={e => { setFilterSubscribed(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Tous les états</option>
           <option value="false">Désinscrits uniquement</option>
           <option value="true">Abonnés uniquement</option>
         </select>
-        <div className="flex gap-1">
-          <input placeholder="Rechercher par email…" value={searchEmail} onChange={e => setSearchEmail(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSearch()}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm w-64" />
-          <Button variant="outline" size="sm" onClick={handleSearch}><Search className="h-4 w-4" /></Button>
-        </div>
       </div>
+
+      <TableToolbar
+        onSearch={(v) => { setSearch(v); setPage(0) }}
+        searchPlaceholder="Rechercher par e-mail…"
+      />
 
       <Card>
         <CardHeader><CardTitle className="text-lg">Abonnements ({items.length})</CardTitle></CardHeader>
@@ -83,8 +96,8 @@ export default function EmailSubscriptionsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b text-left text-muted-foreground">
-                  <th className="pb-2 pr-4">Email</th>
-                  <th className="pb-2 pr-4">Scope</th>
+                  <th className="pb-2 pr-4">Adresse e-mail</th>
+                  <th className="pb-2 pr-4">Portée</th>
                   <th className="pb-2 pr-4">Statut</th>
                   <th className="pb-2 pr-4">Source</th>
                   <th className="pb-2 pr-4">Date désinscription</th>
@@ -98,7 +111,7 @@ export default function EmailSubscriptionsPage() {
                       </td>
                       <td className="py-2 pr-4">
                         <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-700">
-                          {item.scope_type}
+                          {scopeTypeLabel(item.scope_type)}
                         </span>
                       </td>
                       <td className="py-2 pr-4">
@@ -127,6 +140,14 @@ export default function EmailSubscriptionsPage() {
           )}
         </CardContent>
       </Card>
+
+      <TablePagination
+        pageIndex={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        pageCount={Math.ceil(totalCount / PAGE_SIZE)}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

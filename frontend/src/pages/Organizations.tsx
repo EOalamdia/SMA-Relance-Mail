@@ -4,11 +4,14 @@ import { Building2, Pencil, Plus, Save, Trash2, X } from "lucide-react"
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-core/components/ui/card"
+import { TableToolbar, TablePagination } from "@ui-core/components/ui/table"
 
 import type { Organization, OrganizationType } from "../types/sma"
 import { organizationsApi, organizationTypesApi } from "../services/api"
 
 type EditState = { id: string; name: string; organization_type_id: string; address: string; phone: string; email: string; notes: string }
+
+const PAGE_SIZE = 25
 
 export default function OrganizationsPage() {
   const [items, setItems] = useState<Organization[]>([])
@@ -16,6 +19,9 @@ export default function OrganizationsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filterType, setFilterType] = useState("")
+  const [search, setSearch] = useState("")
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
   const [newName, setNewName] = useState("")
   const [newTypeId, setNewTypeId] = useState("")
@@ -24,16 +30,19 @@ export default function OrganizationsPage() {
   const [editState, setEditState] = useState<EditState | null>(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { load() }, [filterType])
+  useEffect(() => {
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
+  }, [search, page, filterType])
 
   async function load() {
     setLoading(true); setError(null)
     try {
       const [orgs, ts] = await Promise.all([
-        organizationsApi.list(filterType || undefined),
+        organizationsApi.list(filterType || undefined, { search: search || undefined, limit: PAGE_SIZE, offset: page * PAGE_SIZE }),
         organizationTypesApi.list(),
       ])
-      setItems(orgs.items); setTypes(ts.items)
+      setItems(orgs.items); setTotalCount(orgs.count); setTypes(ts.items)
     } catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
     finally { setLoading(false) }
   }
@@ -75,26 +84,31 @@ export default function OrganizationsPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <Badge variant="gradient">Referentiels</Badge>
+        <Badge variant="gradient">Référentiels</Badge>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Building2 className="h-6 w-6 text-primary" /> Organismes
         </h1>
       </header>
 
       {/* Filter */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <label className="text-sm font-medium">Filtrer par type :</label>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)}
+        <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Tous</option>
           {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
       </div>
 
+      <TableToolbar
+        onSearch={(v) => { setSearch(v); setPage(0) }}
+        searchPlaceholder="Rechercher un organisme…"
+      />
+
       {/* Create form */}
       <Card>
         <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Plus className="h-4 w-4" /> Nouvel organisme</CardTitle>
-          <CardDescription>Ajouter un organisme au referentiel.</CardDescription></CardHeader>
+          <CardDescription>Ajouter un organisme au référentiel.</CardDescription></CardHeader>
         <CardContent>
           <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
@@ -111,7 +125,7 @@ export default function OrganizationsPage() {
               </select>
             </div>
             <div className="flex-1 space-y-1">
-              <label className="text-sm font-medium">Email</label>
+              <label className="text-sm font-medium">E-mail</label>
               <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} maxLength={255}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
@@ -136,7 +150,7 @@ export default function OrganizationsPage() {
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                   {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
-                <input value={editState.email} onChange={e => setEditState(p => p && { ...p, email: e.target.value })} placeholder="Email"
+                <input value={editState.email} onChange={e => setEditState(p => p && { ...p, email: e.target.value })} placeholder="E-mail"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
                 <input value={editState.phone} onChange={e => setEditState(p => p && { ...p, phone: e.target.value })} placeholder="Téléphone"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
@@ -164,6 +178,14 @@ export default function OrganizationsPage() {
           </Card>
         ))}
       </div>
+
+      <TablePagination
+        pageIndex={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        pageCount={Math.ceil(totalCount / PAGE_SIZE)}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

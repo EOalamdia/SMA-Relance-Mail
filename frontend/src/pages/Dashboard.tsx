@@ -9,6 +9,10 @@ import {
 } from "../services/api"
 import type { DashboardSummary, DueRadarRow, OverdueRow, UpcomingReminderRow } from "../types/sma"
 
+function normalizeStatusKey(status: string): string {
+  return (status || "").trim().toLowerCase().replace(/[\s-]+/g, "_")
+}
+
 export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [radar, setRadar] = useState<DueRadarRow[]>([])
@@ -71,7 +75,7 @@ export default function DashboardPage() {
           <CardContent><p className="text-2xl font-bold text-destructive">{summary.overdue_count}</p></CardContent>
         </Card>
         <Card className="border-yellow-500/30">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2 text-yellow-600"><Clock className="h-4 w-4" /> Bientot dues</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2 text-yellow-600"><Clock className="h-4 w-4" /> Bientôt dues</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold text-yellow-600">{summary.due_soon_count}</p></CardContent>
         </Card>
       </div>
@@ -83,7 +87,7 @@ export default function DashboardPage() {
           <CardContent><p className="text-2xl font-bold text-green-600">{summary.ok_count}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Echeances totales</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Échéances totales</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold">{summary.total_due_items}</p></CardContent>
         </Card>
         <Card>
@@ -107,7 +111,7 @@ export default function DashboardPage() {
                 <thead><tr className="border-b text-left text-muted-foreground">
                   <th className="pb-2 pr-4">Organisme</th>
                   <th className="pb-2 pr-4">Formation</th>
-                  <th className="pb-2 pr-4">Echeance</th>
+                  <th className="pb-2 pr-4">Échéance</th>
                   <th className="pb-2">Jours de retard</th>
                 </tr></thead>
                 <tbody>
@@ -142,7 +146,7 @@ export default function DashboardPage() {
                   <th className="pb-2 pr-4">Organisme</th>
                   <th className="pb-2 pr-4">Formation</th>
                   <th className="pb-2 pr-4">Destinataire</th>
-                  <th className="pb-2 pr-4">Prevue le</th>
+                  <th className="pb-2 pr-4">Prévue le</th>
                   <th className="pb-2">Statut</th>
                 </tr></thead>
                 <tbody>
@@ -152,7 +156,7 @@ export default function DashboardPage() {
                       <td className="py-2 pr-4">{r.course_label}</td>
                       <td className="py-2 pr-4">{r.recipient_email}</td>
                       <td className="py-2 pr-4">{new Date(r.scheduled_for).toLocaleDateString("fr-FR")}</td>
-                      <td className="py-2"><Badge variant="outline">{r.status}</Badge></td>
+                      <td className="py-2"><Badge variant="outline">{statusLabel(r.status)}</Badge></td>
                     </tr>
                   ))}
                 </tbody>
@@ -166,7 +170,7 @@ export default function DashboardPage() {
       {radar.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Radar des echeances</CardTitle>
+            <CardTitle className="text-lg">Radar des échéances</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -174,7 +178,7 @@ export default function DashboardPage() {
                 <thead><tr className="border-b text-left text-muted-foreground">
                   <th className="pb-2 pr-4">Organisme</th>
                   <th className="pb-2 pr-4">Formation</th>
-                  <th className="pb-2 pr-4">Echeance</th>
+                  <th className="pb-2 pr-4">Échéance</th>
                   <th className="pb-2">Statut</th>
                 </tr></thead>
                 <tbody>
@@ -196,6 +200,27 @@ export default function DashboardPage() {
   )
 }
 
+function statusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    ok: "À jour",
+    due_soon: "Bientôt due",
+    due: "À échéance",
+    overdue: "En retard",
+    never_done: "Jamais réalisée",
+    missing_policy: "Politique manquante",
+    no_reminder: "Sans relance",
+    pending: "En attente",
+    ready: "Prête",
+    sent: "Envoyée",
+    failed: "Échouée",
+    cancelled: "Annulée",
+    skipped: "Ignorée",
+    closed: "Clôturée",
+  }
+  const key = normalizeStatusKey(status)
+  return labels[key] ?? status.replace(/_/g, " ")
+}
+
 function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
     ok: "bg-green-100 text-green-800",
@@ -205,10 +230,12 @@ function StatusBadge({ status }: { status: string }) {
     never_done: "bg-gray-100 text-gray-800",
     missing_policy: "bg-purple-100 text-purple-800",
     no_reminder: "bg-slate-100 text-slate-600",
+    closed: "bg-gray-200 text-gray-800",
   }
+  const key = normalizeStatusKey(status)
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${variants[status] ?? "bg-muted text-muted-foreground"}`}>
-      {status.replace(/_/g, " ")}
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${variants[key] ?? "bg-muted text-muted-foreground"}`}>
+      {statusLabel(status)}
     </span>
   )
 }

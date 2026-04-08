@@ -29,14 +29,22 @@ def _table():
 @router.get("", response_model=OrganizationListResponse)
 def list_organizations(
     type_id: UUID | None = Query(None, description="Filtrer par type d'organisation"),
+    search: str | None = Query(None),
+    limit: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0),
     _user: UserContext = Depends(get_current_user),
 ):
-    query = _table().select("*").is_("archived_at", "null")
+    query = _table().select("*", count="exact").is_("archived_at", "null")
     if type_id:
         query = query.eq("organization_type_id", str(type_id))
-    response = query.order("name").execute()
+    if search:
+        query = query.ilike("name", f"%{search}%")
+    query = query.order("name")
+    if limit > 0:
+        query = query.range(offset, offset + limit - 1)
+    response = query.execute()
     rows = response.data or []
-    return OrganizationListResponse(items=[OrganizationOut(**r) for r in rows], count=len(rows))
+    return OrganizationListResponse(items=[OrganizationOut(**r) for r in rows], count=response.count or 0)
 
 
 @router.get("/{item_id}", response_model=OrganizationOut)

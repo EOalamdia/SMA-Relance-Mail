@@ -155,7 +155,7 @@ interface TableToolbarProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const TableToolbar = React.forwardRef<HTMLDivElement, TableToolbarProps>(
-  ({ className, onSearch, onFilter, searchPlaceholder = "Search...", children, ...props }, ref) => (
+  ({ className, onSearch, onFilter, searchPlaceholder = "Rechercher...", children, ...props }, ref) => (
     <div
       ref={ref}
       className={cn("flex items-center justify-between p-4", className)}
@@ -177,7 +177,7 @@ const TableToolbar = React.forwardRef<HTMLDivElement, TableToolbarProps>(
         {onFilter && (
              <Button variant="outline" size="sm" className="h-9 ml-auto" onClick={onFilter}>
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
-                Filter
+                Filtrer
              </Button>
         )}
       </div>
@@ -228,7 +228,7 @@ const TablePagination = React.forwardRef<HTMLDivElement, TablePaginationProps>(
         {...props}
       >
         <div className="flex-1 text-sm text-muted-foreground">
-          Showing {pageIndex * pageSize + 1} to {Math.min((pageIndex + 1) * pageSize, totalCount)} of {totalCount} entries
+          Affichage de {pageIndex * pageSize + 1} à {Math.min((pageIndex + 1) * pageSize, totalCount)} sur {totalCount} entrées
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
           <Pagination>

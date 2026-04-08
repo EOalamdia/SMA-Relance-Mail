@@ -13,7 +13,7 @@ export default function HomePage() {
         <h1 className="text-3xl font-bold tracking-tight">Gestion des relances de formations</h1>
         <p className="max-w-3xl text-muted-foreground">
           Pilotez les échéances de formation de vos organismes, configurez les règles de relance,
-          et suivez l'envoi automatique des notifications par email.
+          et suivez l'envoi automatique des notifications par e-mail.
         </p>
       </header>
 
@@ -50,7 +50,7 @@ export default function HomePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Configurez les règles, templates et suivez les envois d'emails.</p>
+            <p className="text-sm text-muted-foreground">Configurez les règles, modèles et suivez les envois d'e-mails.</p>
           </CardContent>
         </Card>
       </div>

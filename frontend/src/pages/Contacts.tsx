@@ -4,11 +4,14 @@ import { Users, Pencil, Plus, Save, Trash2, X, Star } from "lucide-react"
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-core/components/ui/card"
+import { TableToolbar, TablePagination } from "@ui-core/components/ui/table"
 
 import type { Contact, Organization } from "../types/sma"
 import { contactsApi, organizationsApi } from "../services/api"
 
 type EditState = { id: string; first_name: string; last_name: string; email: string; phone: string; role: string; is_primary: boolean }
+
+const PAGE_SIZE = 25
 
 export default function ContactsPage() {
   const [items, setItems] = useState<Contact[]>([])
@@ -16,6 +19,9 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filterOrg, setFilterOrg] = useState("")
+  const [search, setSearch] = useState("")
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
   const [newFirst, setNewFirst] = useState("")
   const [newLast, setNewLast] = useState("")
@@ -25,16 +31,19 @@ export default function ContactsPage() {
   const [editState, setEditState] = useState<EditState | null>(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { load() }, [filterOrg])
+  useEffect(() => {
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
+  }, [search, page, filterOrg])
 
   async function load() {
     setLoading(true); setError(null)
     try {
       const [cs, os] = await Promise.all([
-        contactsApi.list(filterOrg || undefined),
+        contactsApi.list(filterOrg || undefined, { search: search || undefined, limit: PAGE_SIZE, offset: page * PAGE_SIZE }),
         organizationsApi.list(),
       ])
-      setItems(cs.items); setOrgs(os.items)
+      setItems(cs.items); setTotalCount(cs.count); setOrgs(os.items)
     } catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
     finally { setLoading(false) }
   }
@@ -73,24 +82,29 @@ export default function ContactsPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <Badge variant="gradient">Referentiels</Badge>
+        <Badge variant="gradient">Référentiels</Badge>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Users className="h-6 w-6 text-primary" /> Contacts
         </h1>
       </header>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <label className="text-sm font-medium">Organisme :</label>
-        <select value={filterOrg} onChange={e => setFilterOrg(e.target.value)}
+        <select value={filterOrg} onChange={e => { setFilterOrg(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Tous</option>
           {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
       </div>
 
+      <TableToolbar
+        onSearch={(v) => { setSearch(v); setPage(0) }}
+        searchPlaceholder="Rechercher un contact…"
+      />
+
       <Card>
         <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Plus className="h-4 w-4" /> Nouveau contact</CardTitle>
-          <CardDescription>Ajouter un contact a un organisme.</CardDescription></CardHeader>
+          <CardDescription>Ajouter un contact à un organisme.</CardDescription></CardHeader>
         <CardContent>
           <form onSubmit={handleCreate} className="grid gap-3 sm:grid-cols-5 items-end">
             <div className="space-y-1">
@@ -104,7 +118,7 @@ export default function ContactsPage() {
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Email <span className="text-destructive">*</span></label>
+              <label className="text-sm font-medium">E-mail <span className="text-destructive">*</span></label>
               <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} required maxLength={255}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
@@ -134,7 +148,7 @@ export default function ContactsPage() {
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
                 <input value={editState.last_name} onChange={e => setEditState(p => p && { ...p, last_name: e.target.value })} placeholder="Nom"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input type="email" value={editState.email} onChange={e => setEditState(p => p && { ...p, email: e.target.value })} placeholder="Email"
+                <input type="email" value={editState.email} onChange={e => setEditState(p => p && { ...p, email: e.target.value })} placeholder="E-mail"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
                 <input value={editState.phone} onChange={e => setEditState(p => p && { ...p, phone: e.target.value })} placeholder="Téléphone"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
@@ -166,6 +180,14 @@ export default function ContactsPage() {
           </Card>
         ))}
       </div>
+
+      <TablePagination
+        pageIndex={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        pageCount={Math.ceil(totalCount / PAGE_SIZE)}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

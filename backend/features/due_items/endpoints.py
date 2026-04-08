@@ -27,18 +27,23 @@ def list_due_items(
     organization_id: UUID | None = Query(None),
     course_id: UUID | None = Query(None),
     due_status: str | None = Query(None, alias="status"),
+    limit: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0),
     _user: UserContext = Depends(get_current_user),
 ):
-    query = _table().select("*")
+    query = _table().select("*", count="exact")
     if organization_id:
         query = query.eq("organization_id", str(organization_id))
     if course_id:
         query = query.eq("course_id", str(course_id))
     if due_status:
         query = query.eq("status", due_status)
-    response = query.order("due_date").execute()
+    query = query.order("due_date")
+    if limit > 0:
+        query = query.range(offset, offset + limit - 1)
+    response = query.execute()
     rows = response.data or []
-    return DueItemListResponse(items=[DueItemOut(**r) for r in rows], count=len(rows))
+    return DueItemListResponse(items=[DueItemOut(**r) for r in rows], count=response.count or 0)
 
 
 @router.get("/{item_id}", response_model=DueItemOut)

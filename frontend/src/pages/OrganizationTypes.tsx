@@ -4,11 +4,14 @@ import { Tags, Pencil, Plus, Save, Trash2, X } from "lucide-react"
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-core/components/ui/card"
+import { TableToolbar, TablePagination } from "@ui-core/components/ui/table"
 
 import type { OrganizationType } from "../types/sma"
 import { organizationTypesApi } from "../services/api"
 
 type EditState = { id: string; name: string; description: string }
+
+const PAGE_SIZE = 25
 
 export default function OrganizationTypesPage() {
   const [items, setItems] = useState<OrganizationType[]>([])
@@ -19,12 +22,21 @@ export default function OrganizationTypesPage() {
   const [creating, setCreating] = useState(false)
   const [editState, setEditState] = useState<EditState | null>(null)
   const [saving, setSaving] = useState(false)
+  const [search, setSearch] = useState("")
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
+  }, [search, page])
 
   async function load() {
     setLoading(true); setError(null)
-    try { const d = await organizationTypesApi.list(); setItems(d.items) }
+    try {
+      const d = await organizationTypesApi.list({ search: search || undefined, limit: PAGE_SIZE, offset: page * PAGE_SIZE })
+      setItems(d.items); setTotalCount(d.count)
+    }
     catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
     finally { setLoading(false) }
   }
@@ -57,7 +69,7 @@ export default function OrganizationTypesPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <Badge variant="gradient">Referentiels</Badge>
+        <Badge variant="gradient">Référentiels</Badge>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Tags className="h-6 w-6 text-primary" /> Types d'organismes
         </h1>
@@ -82,6 +94,11 @@ export default function OrganizationTypesPage() {
           </form>
         </CardContent>
       </Card>
+
+      <TableToolbar
+        onSearch={(v) => { setSearch(v); setPage(0) }}
+        searchPlaceholder="Rechercher un type…"
+      />
 
       <div className="space-y-3">
         {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
@@ -116,6 +133,14 @@ export default function OrganizationTypesPage() {
           </Card>
         ))}
       </div>
+
+      <TablePagination
+        pageIndex={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        pageCount={Math.ceil(totalCount / PAGE_SIZE)}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

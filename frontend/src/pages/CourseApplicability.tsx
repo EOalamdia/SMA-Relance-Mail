@@ -4,11 +4,14 @@ import { Link2, Plus, Trash2 } from "lucide-react"
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-core/components/ui/card"
+import { TablePagination } from "@ui-core/components/ui/table"
 
 import type { CourseApplicability, Organization, OrganizationType, TrainingCourse } from "../types/sma"
 import { courseApplicabilityApi, organizationsApi, organizationTypesApi, trainingCoursesApi } from "../services/api"
 
 type ScopeMode = "organization" | "organization_type"
+
+const PAGE_SIZE = 25
 
 export default function CourseApplicabilityPage() {
   const [items, setItems] = useState<CourseApplicability[]>([])
@@ -17,6 +20,8 @@ export default function CourseApplicabilityPage() {
   const [courses, setCourses] = useState<TrainingCourse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
   const [scopeMode, setScopeMode] = useState<ScopeMode>("organization")
   const [newOrgId, setNewOrgId] = useState("")
@@ -24,18 +29,18 @@ export default function CourseApplicabilityPage() {
   const [newCourseId, setNewCourseId] = useState("")
   const [creating, setCreating] = useState(false)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [page])
 
   async function load() {
     setLoading(true); setError(null)
     try {
       const [a, o, ot, c] = await Promise.all([
-        courseApplicabilityApi.list(),
+        courseApplicabilityApi.list(undefined, undefined, undefined, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }),
         organizationsApi.list(),
         organizationTypesApi.list(),
         trainingCoursesApi.list(),
       ])
-      setItems(a.items); setOrgs(o.items); setOrgTypes(ot.items); setCourses(c.items)
+      setItems(a.items); setTotalCount(a.count); setOrgs(o.items); setOrgTypes(ot.items); setCourses(c.items)
     } catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
     finally { setLoading(false) }
   }
@@ -153,6 +158,14 @@ export default function CourseApplicabilityPage() {
           </Card>
         ))}
       </div>
+
+      <TablePagination
+        pageIndex={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        pageCount={Math.ceil(totalCount / PAGE_SIZE)}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

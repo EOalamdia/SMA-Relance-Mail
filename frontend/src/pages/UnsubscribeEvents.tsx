@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react"
-import { ClipboardList, Search } from "lucide-react"
+import { ClipboardList } from "lucide-react"
 
 import { Badge } from "@ui-core/components/ui/badge"
-import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@ui-core/components/ui/card"
+import { TableToolbar, TablePagination } from "@ui-core/components/ui/table"
 
 import type { UnsubscribeEvent, UnsubEventType } from "../types/sma"
 import { unsubscribeEventsApi } from "../services/api"
+
+const PAGE_SIZE = 25
 
 const EVENT_COLORS: Record<string, string> = {
   unsubscribe_clicked: "bg-yellow-100 text-yellow-800",
@@ -21,7 +23,7 @@ const EVENT_LABELS: Record<string, string> = {
   unsubscribe_confirmed: "Confirmé",
   unsubscribe_already_done: "Déjà fait",
   resubscribe: "Réabonnement",
-  admin_override: "Admin",
+  admin_override: "Administrateur",
 }
 
 export default function UnsubscribeEventsPage() {
@@ -29,18 +31,25 @@ export default function UnsubscribeEventsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filterType, setFilterType] = useState("")
-  const [searchEmail, setSearchEmail] = useState("")
+  const [search, setSearch] = useState("")
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
-  useEffect(() => { load() }, [filterType])
+  useEffect(() => {
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
+  }, [search, page, filterType])
 
   async function load() {
     setLoading(true); setError(null)
     try {
-      const params: Record<string, string> = {}
-      if (filterType) params.event_type = filterType
-      if (searchEmail) params.email = searchEmail
-      const d = await unsubscribeEventsApi.list(params)
-      setItems(d.items)
+      const d = await unsubscribeEventsApi.list({
+        event_type: filterType || undefined,
+        email: search || undefined,
+        limit: PAGE_SIZE,
+        offset: page * PAGE_SIZE,
+      })
+      setItems(d.items); setTotalCount(d.count)
     } catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
     finally { setLoading(false) }
   }
@@ -60,18 +69,17 @@ export default function UnsubscribeEventsPage() {
       </header>
 
       <div className="flex flex-wrap items-center gap-3">
-        <select value={filterType} onChange={e => setFilterType(e.target.value)}
+        <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Tous les types</option>
           {eventTypes.map(t => <option key={t} value={t}>{EVENT_LABELS[t] || t}</option>)}
         </select>
-        <div className="flex gap-1">
-          <input placeholder="Rechercher par email…" value={searchEmail} onChange={e => setSearchEmail(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && load()}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm w-64" />
-          <Button variant="outline" size="sm" onClick={load}><Search className="h-4 w-4" /></Button>
-        </div>
       </div>
+
+      <TableToolbar
+        onSearch={(v) => { setSearch(v); setPage(0) }}
+        searchPlaceholder="Rechercher par e-mail…"
+      />
 
       <Card>
         <CardHeader><CardTitle className="text-lg">Événements ({items.length})</CardTitle></CardHeader>
@@ -87,7 +95,7 @@ export default function UnsubscribeEventsPage() {
               <table className="w-full text-sm">
                 <thead><tr className="border-b text-left text-muted-foreground">
                   <th className="pb-2 pr-4">Date</th>
-                  <th className="pb-2 pr-4">Email</th>
+                  <th className="pb-2 pr-4">Adresse e-mail</th>
                   <th className="pb-2 pr-4">Type</th>
                   <th className="pb-2 pr-4">Source</th>
                   <th className="pb-2">IP</th>
@@ -112,6 +120,14 @@ export default function UnsubscribeEventsPage() {
           )}
         </CardContent>
       </Card>
+
+      <TablePagination
+        pageIndex={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        pageCount={Math.ceil(totalCount / PAGE_SIZE)}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

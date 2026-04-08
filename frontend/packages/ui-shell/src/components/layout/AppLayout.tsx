@@ -21,7 +21,7 @@ interface AppLayoutProps {
 export default function AppLayout({ 
     children, 
     logo, 
-    appName = "App", 
+    appName = "Application", 
     navConfig, 
     user,
     onLogout,
@@ -104,8 +104,8 @@ export default function AppLayout({
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="left" className="w-[80vw] sm:w-[350px] p-0 flex flex-col">
-                             <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                             <SheetDescription className="sr-only">Main navigation menu for mobile</SheetDescription>
+                             <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
+                             <SheetDescription className="sr-only">Menu principal de navigation sur mobile</SheetDescription>
                              <div className="h-14 flex items-center px-6 border-b">
                                 {logo ? logo : (
                                     <div className="flex items-center gap-2">

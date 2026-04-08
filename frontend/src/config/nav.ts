@@ -17,7 +17,7 @@ export function buildNavConfig(_isDev: boolean): NavSection[] {
       ],
     },
     {
-      title: "Referentiels",
+      title: "Référentiels",
       items: [
         { title: "Types d'organismes", href: "/organization-types", icon: Tags },
         { title: "Organismes", href: "/organizations", icon: Building2 },
@@ -30,29 +30,29 @@ export function buildNavConfig(_isDev: boolean): NavSection[] {
         { title: "Catalogue", href: "/training-courses", icon: GraduationCap },
         { title: "Applicabilité", href: "/course-applicability", icon: Link2 },
         { title: "Sessions", href: "/training-sessions", icon: CalendarDays },
-        { title: "Echeances", href: "/due-items", icon: Target },
+        { title: "Échéances", href: "/due-items", icon: Target },
       ],
     },
     {
       title: "Relances",
       items: [
-        { title: "Jobs de relance", href: "/reminder-jobs", icon: Send },
-        { title: "Historique envois", href: "/email-deliveries", icon: MailCheck },
+        { title: "Tâches de relance", href: "/reminder-jobs", icon: Send },
+        { title: "Historique des envois", href: "/email-deliveries", icon: MailCheck },
       ],
     },
     {
       title: "Désinscription",
       items: [
-        { title: "Topics de communication", href: "/communication-topics", icon: MessageSquare },
-        { title: "Abonnements email", href: "/email-subscriptions", icon: MailX },
-        { title: "Journal désinscriptions", href: "/unsubscribe-events", icon: ClipboardList },
+        { title: "Sujets de communication", href: "/communication-topics", icon: MessageSquare },
+        { title: "Abonnements e-mail", href: "/email-subscriptions", icon: MailX },
+        { title: "Journal des désinscriptions", href: "/unsubscribe-events", icon: ClipboardList },
       ],
     },
     {
-      title: "Parametrage",
+      title: "Paramétrage",
       items: [
         { title: "Règles de relance", href: "/reminder-rules", icon: Bell },
-        { title: "Templates email", href: "/email-templates", icon: Mail },
+        { title: "Modèles d'e-mail", href: "/email-templates", icon: Mail },
       ],
     },
   ]

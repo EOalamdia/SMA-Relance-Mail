@@ -107,12 +107,23 @@ topics_router = APIRouter(prefix="/v1/communication-topics", tags=["Communicatio
 
 
 @topics_router.get("", response_model=CommunicationTopicListResponse)
-def list_communication_topics(_user: UserContext = Depends(get_current_user)):
-    response = _table("communication_topics").select("*").order("code").execute()
+def list_communication_topics(
+    search: str | None = Query(None),
+    limit: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0),
+    _user: UserContext = Depends(get_current_user),
+):
+    query = _table("communication_topics").select("*", count="exact")
+    if search:
+        query = query.or_(f"code.ilike.%{search}%,label.ilike.%{search}%,description.ilike.%{search}%")
+    query = query.order("code")
+    if limit > 0:
+        query = query.range(offset, offset + limit - 1)
+    response = query.execute()
     rows = response.data or []
     return CommunicationTopicListResponse(
         items=[CommunicationTopicOut(**r) for r in rows],
-        count=len(rows),
+        count=response.count or 0,
     )
 
 
@@ -171,9 +182,11 @@ def list_email_subscriptions(
     is_subscribed: bool | None = Query(None),
     topic_id: str | None = Query(None, alias="communication_topic_id"),
     email: str | None = Query(None),
+    limit: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0),
     _user: UserContext = Depends(get_current_user),
 ):
-    query = _table("email_subscriptions").select("*")
+    query = _table("email_subscriptions").select("*", count="exact")
     if is_subscribed is not None:
         query = query.eq("is_subscribed", is_subscribed)
     if topic_id:
@@ -181,11 +194,14 @@ def list_email_subscriptions(
     if email:
         from .service import hash_email
         query = query.eq("email_hash", hash_email(email))
-    response = query.order("updated_at", desc=True).execute()
+    query = query.order("updated_at", desc=True)
+    if limit > 0:
+        query = query.range(offset, offset + limit - 1)
+    response = query.execute()
     rows = response.data or []
     return EmailSubscriptionListResponse(
         items=[EmailSubscriptionOut(**r) for r in rows],
-        count=len(rows),
+        count=response.count or 0,
     )
 
 
@@ -221,17 +237,22 @@ events_router = APIRouter(prefix="/v1/unsubscribe-events", tags=["Unsubscribe Ev
 def list_unsubscribe_events(
     event_type: str | None = Query(None),
     email: str | None = Query(None),
+    limit: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0),
     _user: UserContext = Depends(get_current_user),
 ):
-    query = _table("unsubscribe_events").select("*")
+    query = _table("unsubscribe_events").select("*", count="exact")
     if event_type:
         query = query.eq("event_type", event_type)
     if email:
         from .service import hash_email
         query = query.eq("email_hash", hash_email(email))
-    response = query.order("created_at", desc=True).limit(500).execute()
+    query = query.order("created_at", desc=True)
+    if limit > 0:
+        query = query.range(offset, offset + limit - 1)
+    response = query.execute()
     rows = response.data or []
     return UnsubscribeEventListResponse(
         items=[UnsubscribeEventOut(**r) for r in rows],
-        count=len(rows),
+        count=response.count or 0,
     )

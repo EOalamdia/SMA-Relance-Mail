@@ -4,6 +4,7 @@ import { Bell, Pencil, Plus, Save, Trash2, X } from "lucide-react"
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-core/components/ui/card"
+import { TableToolbar, TablePagination } from "@ui-core/components/ui/table"
 
 import type { ReminderRule, EmailTemplate } from "../types/sma"
 import { reminderRulesApi, emailTemplatesApi } from "../services/api"
@@ -13,11 +14,16 @@ type EditState = {
   trigger_type: string; recipient_strategy: string; template_id: string
 }
 
+const PAGE_SIZE = 25
+
 export default function ReminderRulesPage() {
   const [items, setItems] = useState<ReminderRule[]>([])
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState("")
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
   const [newName, setNewName] = useState("")
   const [newSign, setNewSign] = useState("-1")
@@ -28,16 +34,19 @@ export default function ReminderRulesPage() {
   const [editState, setEditState] = useState<EditState | null>(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
+  }, [search, page])
 
   async function load() {
     setLoading(true); setError(null)
     try {
       const [r, t] = await Promise.all([
-        reminderRulesApi.list(),
+        reminderRulesApi.list({ search: search || undefined, limit: PAGE_SIZE, offset: page * PAGE_SIZE }),
         emailTemplatesApi.list(),
       ])
-      setItems(r.items); setTemplates(t.items)
+      setItems(r.items); setTotalCount(r.count); setTemplates(t.items)
     } catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
     finally { setLoading(false) }
   }
@@ -81,10 +90,17 @@ export default function ReminderRulesPage() {
     finally { setSaving(false) }
   }
 
+  function recipientStrategyLabel(strategy: string): string {
+    if (strategy === "primary") return "Contact principal"
+    if (strategy === "role") return "Par rôle"
+    if (strategy === "fallback") return "Secours"
+    return strategy
+  }
+
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <Badge variant="gradient">Parametrage</Badge>
+        <Badge variant="gradient">Paramétrage</Badge>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Bell className="h-6 w-6 text-primary" /> Règles de relance
         </h1>
@@ -134,6 +150,16 @@ export default function ReminderRulesPage() {
         </CardContent>
       </Card>
 
+      <TableToolbar
+        onSearch={(v) => { setSearch(v); setPage(0) }}
+        searchPlaceholder="Rechercher une règle…"
+      />
+
+      <TableToolbar
+        onSearch={(v) => { setSearch(v); setPage(0) }}
+        searchPlaceholder="Rechercher une règle…"
+      />
+
       <div className="space-y-3">
         {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
         {error && <Card className="border-destructive/50"><CardContent className="pt-4"><p className="text-sm text-destructive">{error}</p></CardContent></Card>}
@@ -147,12 +173,12 @@ export default function ReminderRulesPage() {
                   className="col-span-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
                 <select value={editState.template_id} onChange={e => setEditState(p => p && { ...p, template_id: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                  <option value="">Template par défaut</option>
+                  <option value="">Modèle par défaut</option>
                   {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
                 <select value={editState.recipient_strategy} onChange={e => setEditState(p => p && { ...p, recipient_strategy: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                  <option value="primary">Contact principal</option><option value="role">Par rôle</option><option value="fallback">Fallback</option>
+                  <option value="primary">Contact principal</option><option value="role">Par rôle</option><option value="fallback">Secours</option>
                 </select>
                 <select value={editState.offset_sign} onChange={e => setEditState(p => p && { ...p, offset_sign: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
@@ -183,7 +209,7 @@ export default function ReminderRulesPage() {
                 <p className="text-xs text-muted-foreground">
                   {item.offset_sign < 0 ? "-" : item.offset_sign > 0 ? "+" : ""}{item.offset_value} {item.offset_unit === "day" ? "j" : "mois"}
                   · {item.trigger_type === "before" ? "avant" : item.trigger_type === "after" ? "après" : "jour J"} échéance
-                  · {item.recipient_strategy}
+                  · {recipientStrategyLabel(item.recipient_strategy)}
                 </p>
               </div>
               <div className="flex gap-1">
@@ -199,6 +225,14 @@ export default function ReminderRulesPage() {
           </Card>
         ))}
       </div>
+
+      <TablePagination
+        pageIndex={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        pageCount={Math.ceil(totalCount / PAGE_SIZE)}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

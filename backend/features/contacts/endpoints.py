@@ -29,14 +29,22 @@ def _table():
 @router.get("", response_model=ContactListResponse)
 def list_contacts(
     organization_id: UUID | None = Query(None, description="Filtrer par organisation"),
+    search: str | None = Query(None),
+    limit: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0),
     _user: UserContext = Depends(get_current_user),
 ):
-    query = _table().select("*").is_("archived_at", "null")
+    query = _table().select("*", count="exact").is_("archived_at", "null")
     if organization_id:
         query = query.eq("organization_id", str(organization_id))
-    response = query.order("last_name").execute()
+    if search:
+        query = query.or_(f"first_name.ilike.%{search}%,last_name.ilike.%{search}%,email.ilike.%{search}%,role.ilike.%{search}%")
+    query = query.order("last_name")
+    if limit > 0:
+        query = query.range(offset, offset + limit - 1)
+    response = query.execute()
     rows = response.data or []
-    return ContactListResponse(items=[ContactOut(**r) for r in rows], count=len(rows))
+    return ContactListResponse(items=[ContactOut(**r) for r in rows], count=response.count or 0)
 
 
 @router.get("/{item_id}", response_model=ContactOut)

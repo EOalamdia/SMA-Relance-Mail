@@ -4,9 +4,12 @@ import { MessageSquare, Plus, Pencil } from "lucide-react"
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@ui-core/components/ui/card"
+import { TableToolbar, TablePagination } from "@ui-core/components/ui/table"
 
 import type { CommunicationTopic, CommunicationTopicCreate, CommunicationTopicUpdate } from "../types/sma"
 import { communicationTopicsApi } from "../services/api"
+
+const PAGE_SIZE = 25
 
 export default function CommunicationTopicsPage() {
   const [items, setItems] = useState<CommunicationTopic[]>([])
@@ -14,6 +17,9 @@ export default function CommunicationTopicsPage() {
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [search, setSearch] = useState("")
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
   // Form state
   const [formCode, setFormCode] = useState("")
@@ -21,11 +27,17 @@ export default function CommunicationTopicsPage() {
   const [formDescription, setFormDescription] = useState("")
   const [formUnsubscribable, setFormUnsubscribable] = useState(true)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
+  }, [search, page])
 
   async function load() {
     setLoading(true); setError(null)
-    try { const d = await communicationTopicsApi.list(); setItems(d.items) }
+    try {
+      const d = await communicationTopicsApi.list({ search: search || undefined, limit: PAGE_SIZE, offset: page * PAGE_SIZE })
+      setItems(d.items); setTotalCount(d.count)
+    }
     catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
     finally { setLoading(false) }
   }
@@ -72,7 +84,7 @@ export default function CommunicationTopicsPage() {
   }
 
   async function handleDeactivate(id: string) {
-    if (!confirm("Désactiver ce topic de communication ?")) return
+    if (!confirm("Désactiver ce sujet de communication ?")) return
     try {
       await communicationTopicsApi.deactivate(id)
       load()
@@ -84,25 +96,25 @@ export default function CommunicationTopicsPage() {
       <header className="space-y-2">
         <Badge variant="gradient">Désinscription</Badge>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <MessageSquare className="h-6 w-6 text-primary" /> Topics de communication
+          <MessageSquare className="h-6 w-6 text-primary" /> Sujets de communication
         </h1>
         <p className="text-muted-foreground max-w-2xl">
-          Catégories d'emails permettant de gérer les désinscriptions par type de message.
+          Catégories d'e-mails permettant de gérer les désinscriptions par type de message.
         </p>
       </header>
 
       <div className="flex items-center gap-3">
         <Button onClick={() => { resetForm(); setShowCreate(true) }} variant="outline">
-          <Plus className="h-4 w-4 mr-2" /> Nouveau topic
+          <Plus className="h-4 w-4 mr-2" /> Nouveau sujet
         </Button>
       </div>
 
       {/* Create form */}
       {showCreate && (
         <Card>
-          <CardHeader><CardTitle className="text-lg">Nouveau topic</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-lg">Nouveau sujet</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <input placeholder="Code (ex: training_reminders)" value={formCode} onChange={e => setFormCode(e.target.value)}
+            <input placeholder="Code (ex : rappels_formation)" value={formCode} onChange={e => setFormCode(e.target.value)}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
             <input placeholder="Libellé" value={formLabel} onChange={e => setFormLabel(e.target.value)}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
@@ -121,10 +133,15 @@ export default function CommunicationTopicsPage() {
       )}
 
       {/* List */}
+      <TableToolbar
+        onSearch={(v) => { setSearch(v); setPage(0) }}
+        searchPlaceholder="Rechercher un sujet de communication…"
+      />
+
       <div className="space-y-3">
         {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
         {error && <Card className="border-destructive/50"><CardContent className="pt-4"><p className="text-sm text-destructive">{error}</p></CardContent></Card>}
-        {!loading && !error && items.length === 0 && <Card><CardContent className="pt-6 text-center text-sm text-muted-foreground">Aucun topic de communication.</CardContent></Card>}
+        {!loading && !error && items.length === 0 && <Card><CardContent className="pt-6 text-center text-sm text-muted-foreground">Aucun sujet de communication.</CardContent></Card>}
 
         {items.map(item => (
           <Card key={item.id}>
@@ -173,6 +190,14 @@ export default function CommunicationTopicsPage() {
           </Card>
         ))}
       </div>
+
+      <TablePagination
+        pageIndex={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        pageCount={Math.ceil(totalCount / PAGE_SIZE)}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

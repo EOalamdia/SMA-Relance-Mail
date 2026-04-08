@@ -188,7 +188,7 @@ function PWAInstallHelpModal({
 
 export function UserNav({ user, isCollapsed, onLogout, onHubReturn }: UserNavProps) {
     const displayEmail = normalizeText(user.email) || "email-inconnu@hub.local"
-    const displayName = normalizeText(user.name) || nameFromEmail(displayEmail) || "Hub User"
+    const displayName = normalizeText(user.name) || nameFromEmail(displayEmail) || "Utilisateur Hub"
     const displayAvatarUrl = normalizeText(user.avatarUrl)
     const initials = buildInitials(displayName, displayEmail)
     const { isInstallable, isIOS, isAndroid, promptReady, handleInstallClick } = usePWAInstall()

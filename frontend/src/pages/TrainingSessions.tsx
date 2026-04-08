@@ -4,11 +4,14 @@ import { CalendarDays, Pencil, Plus, Save, Trash2, X } from "lucide-react"
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-core/components/ui/card"
+import { TablePagination } from "@ui-core/components/ui/table"
 
 import type { TrainingSession, Organization, TrainingCourse } from "../types/sma"
 import { trainingSessionsApi, organizationsApi, trainingCoursesApi } from "../services/api"
 
 type EditState = { id: string; session_date: string; expiry_date: string; status: string; provider: string; notes: string }
+
+const PAGE_SIZE = 25
 
 export default function TrainingSessionsPage() {
   const [items, setItems] = useState<TrainingSession[]>([])
@@ -18,6 +21,8 @@ export default function TrainingSessionsPage() {
   const [error, setError] = useState<string | null>(null)
   const [filterOrg, setFilterOrg] = useState("")
   const [filterCourse, setFilterCourse] = useState("")
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
   const [newOrgId, setNewOrgId] = useState("")
   const [newCourseId, setNewCourseId] = useState("")
@@ -26,17 +31,17 @@ export default function TrainingSessionsPage() {
   const [editState, setEditState] = useState<EditState | null>(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { load() }, [filterOrg, filterCourse])
+  useEffect(() => { load() }, [filterOrg, filterCourse, page])
 
   async function load() {
     setLoading(true); setError(null)
     try {
       const [s, o, c] = await Promise.all([
-        trainingSessionsApi.list(filterOrg || undefined, filterCourse || undefined),
+        trainingSessionsApi.list(filterOrg || undefined, filterCourse || undefined, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }),
         organizationsApi.list(),
         trainingCoursesApi.list(),
       ])
-      setItems(s.items); setOrgs(o.items); setCourses(c.items)
+      setItems(s.items); setTotalCount(s.count); setOrgs(o.items); setCourses(c.items)
     } catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
     finally { setLoading(false) }
   }
@@ -80,6 +85,11 @@ export default function TrainingSessionsPage() {
     completed: "bg-green-100 text-green-800",
     cancelled: "bg-gray-100 text-gray-600",
   }
+  const statusLabels: Record<string, string> = {
+    planned: "Planifiée",
+    completed: "Terminée",
+    cancelled: "Annulée",
+  }
 
   return (
     <div className="space-y-6">
@@ -91,12 +101,12 @@ export default function TrainingSessionsPage() {
       </header>
 
       <div className="flex flex-wrap items-center gap-3">
-        <select value={filterOrg} onChange={e => setFilterOrg(e.target.value)}
+        <select value={filterOrg} onChange={e => { setFilterOrg(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Tous les organismes</option>
           {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
-        <select value={filterCourse} onChange={e => setFilterCourse(e.target.value)}
+        <select value={filterCourse} onChange={e => { setFilterCourse(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Toutes les formations</option>
           {courses.map(c => <option key={c.id} value={c.id}>[{c.code}] {c.title}</option>)}
@@ -173,7 +183,9 @@ export default function TrainingSessionsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[item.status] ?? ""}`}>{item.status}</span>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[item.status] ?? ""}`}>
+                  {statusLabels[item.status] ?? item.status}
+                </span>
                 <Button size="icon" variant="ghost" onClick={() => setEditState({ id: item.id, session_date: item.session_date, expiry_date: item.expiry_date ?? "", status: item.status, provider: item.provider ?? "", notes: item.notes ?? "" })}><Pencil className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4" /></Button>
               </div>
@@ -181,6 +193,14 @@ export default function TrainingSessionsPage() {
           </Card>
         ))}
       </div>
+
+      <TablePagination
+        pageIndex={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        pageCount={Math.ceil(totalCount / PAGE_SIZE)}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

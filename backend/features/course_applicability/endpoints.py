@@ -37,9 +37,11 @@ def list_course_applicability(
     organization_id: UUID | None = Query(None),
     organization_type_id: UUID | None = Query(None),
     course_id: UUID | None = Query(None),
+    limit: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0),
     _user: UserContext = Depends(get_current_user),
 ):
-    query = _table().select("*")
+    query = _table().select("*", count="exact")
     if organization_id:
         query = query.eq("organization_id", str(organization_id))
     if organization_type_id:
@@ -47,8 +49,12 @@ def list_course_applicability(
     if course_id:
         query = query.eq("course_id", str(course_id))
     try:
-        response = query.order("created_at", desc=True).execute()
+        ordered = query.order("created_at", desc=True)
+        if limit > 0:
+            ordered = ordered.range(offset, offset + limit - 1)
+        response = ordered.execute()
         rows = response.data or []
+        total = response.count or 0
     except APIError as exc:
         if not (organization_type_id and _is_missing_column_error(exc, "organization_type_id")):
             raise
@@ -65,14 +71,20 @@ def list_course_applicability(
         org_ids = [row["id"] for row in org_rows if row.get("id")]
         if not org_ids:
             rows = []
+            total = 0
         else:
-            fallback_query = _table().select("*").in_("organization_id", org_ids)
+            fallback_query = _table().select("*", count="exact").in_("organization_id", org_ids)
             if organization_id:
                 fallback_query = fallback_query.eq("organization_id", str(organization_id))
             if course_id:
                 fallback_query = fallback_query.eq("course_id", str(course_id))
-            rows = fallback_query.order("created_at", desc=True).execute().data or []
-    return CourseApplicabilityListResponse(items=[CourseApplicabilityOut(**r) for r in rows], count=len(rows))
+            fb_ordered = fallback_query.order("created_at", desc=True)
+            if limit > 0:
+                fb_ordered = fb_ordered.range(offset, offset + limit - 1)
+            fb_response = fb_ordered.execute()
+            rows = fb_response.data or []
+            total = fb_response.count or 0
+    return CourseApplicabilityListResponse(items=[CourseApplicabilityOut(**r) for r in rows], count=total)
 
 
 @router.post("", response_model=CourseApplicabilityOut, status_code=status.HTTP_201_CREATED)

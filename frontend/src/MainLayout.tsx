@@ -7,7 +7,7 @@ import { buildNavConfig } from "@/config/nav"
 import { starterApi } from "@/services/api"
 
 const DEFAULT_USER: UserProfile = {
-  name: "Hub User",
+  name: "Utilisateur Hub",
   email: "forward-auth@hub.local",
 }
 
@@ -17,7 +17,7 @@ const DEFAULT_TITLE_PREFIX = "SMA"
 
 function deriveDisplayName(email?: string): string {
   const localPart = (email ?? "").split("@")[0] ?? ""
-  if (!localPart) return "Hub User"
+  if (!localPart) return "Utilisateur Hub"
   return localPart
     .replace(/[._-]+/g, " ")
     .split(" ")
@@ -55,7 +55,7 @@ function ShellLogo({ appName, iconUrl }: { appName: string; iconUrl: string | nu
     <div className="flex items-center gap-2">
       <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-primary to-secondary/60 text-primary-foreground shadow-sm">
         {imageIcon ? (
-          <img src={icon} alt={`${appName} icon`} className="h-5 w-5 object-contain" />
+          <img src={icon} alt={`${appName} icône`} className="h-5 w-5 object-contain" />
         ) : (
           <span className="text-base leading-none">{glyphIcon}</span>
         )}

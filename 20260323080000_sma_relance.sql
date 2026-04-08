@@ -606,3 +606,42 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA sma_relance
     GRANT ALL ON TABLES TO anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES IN SCHEMA sma_relance
     GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
+-- ============================================================================
+-- Performance : index trigrammes pour la recherche ILIKE
+-- ============================================================================
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA extensions;
+
+CREATE INDEX IF NOT EXISTS idx_sma_org_types_name_trgm
+    ON sma_relance.organization_types USING GIN (name gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_sma_organizations_name_trgm
+    ON sma_relance.organizations USING GIN (name gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_sma_contacts_fullname_trgm
+    ON sma_relance.organization_contacts USING GIN ((first_name || ' ' || last_name) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_sma_contacts_email_trgm
+    ON sma_relance.organization_contacts USING GIN (email gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_sma_courses_code_trgm
+    ON sma_relance.training_courses USING GIN (code gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_sma_courses_title_trgm
+    ON sma_relance.training_courses USING GIN (title gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_sma_reminder_rules_name_trgm
+    ON sma_relance.reminder_rules USING GIN (name gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_sma_email_templates_name_trgm
+    ON sma_relance.email_templates USING GIN (name gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_sma_reminder_jobs_email_trgm
+    ON sma_relance.reminder_jobs USING GIN (recipient_email gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_sma_comm_topics_code_trgm
+    ON sma_relance.communication_topics USING GIN (code gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_sma_comm_topics_label_trgm
+    ON sma_relance.communication_topics USING GIN (label gin_trgm_ops);

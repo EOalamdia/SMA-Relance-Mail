@@ -4,10 +4,17 @@ import { Target, RefreshCw, XCircle } from "lucide-react"
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@ui-core/components/ui/card"
+import { TablePagination } from "@ui-core/components/ui/table"
 
 import type { DueItem, DueStatus } from "../types/sma"
 import { dueItemsApi, organizationsApi, trainingCoursesApi } from "../services/api"
 import type { Organization, TrainingCourse } from "../types/sma"
+
+function normalizeStatusKey(status: string): string {
+  return (status || "").trim().toLowerCase().replace(/[\s-]+/g, "_")
+}
+
+const PAGE_SIZE = 25
 
 export default function DueItemsPage() {
   const [items, setItems] = useState<DueItem[]>([])
@@ -17,18 +24,20 @@ export default function DueItemsPage() {
   const [error, setError] = useState<string | null>(null)
   const [computing, setComputing] = useState(false)
   const [filterStatus, setFilterStatus] = useState("")
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
-  useEffect(() => { load() }, [filterStatus])
+  useEffect(() => { load() }, [filterStatus, page])
 
   async function load() {
     setLoading(true); setError(null)
     try {
       const [d, o, c] = await Promise.all([
-        dueItemsApi.list(filterStatus || undefined),
+        dueItemsApi.list(filterStatus || undefined, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }),
         organizationsApi.list(),
         trainingCoursesApi.list(),
       ])
-      setItems(d.items); setOrgs(o.items); setCourses(c.items)
+      setItems(d.items); setTotalCount(d.count); setOrgs(o.items); setCourses(c.items)
     } catch (e) { setError(e instanceof Error ? e.message : "Erreur") }
     finally { setLoading(false) }
   }
@@ -54,7 +63,7 @@ export default function DueItemsPage() {
     } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
   }
 
-  const statusVariants: Record<DueStatus, string> = {
+  const statusVariants: Record<string, string> = {
     ok: "bg-green-100 text-green-800",
     due_soon: "bg-yellow-100 text-yellow-800",
     due: "bg-orange-100 text-orange-800",
@@ -62,16 +71,37 @@ export default function DueItemsPage() {
     never_done: "bg-gray-100 text-gray-800",
     missing_policy: "bg-purple-100 text-purple-800",
     no_reminder: "bg-slate-100 text-slate-600",
+    closed: "bg-gray-200 text-gray-800",
+  }
+  const statusLabels: Record<string, string> = {
+    ok: "À jour",
+    due_soon: "Bientôt due",
+    due: "À échéance",
+    overdue: "En retard",
+    never_done: "Jamais réalisée",
+    missing_policy: "Politique manquante",
+    no_reminder: "Sans relance",
+    closed: "Clôturée",
   }
 
   const statuses: DueStatus[] = ["overdue", "due", "due_soon", "ok", "never_done", "missing_policy", "no_reminder"]
 
+  function getStatusLabel(status: string): string {
+    const key = normalizeStatusKey(status)
+    return statusLabels[key] ?? status
+  }
+
+  function getStatusClass(status: string): string {
+    const key = normalizeStatusKey(status)
+    return statusVariants[key] ?? "bg-muted text-muted-foreground"
+  }
+
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <Badge variant="gradient">Echeances</Badge>
+        <Badge variant="gradient">Échéances</Badge>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Target className="h-6 w-6 text-primary" /> Echeances de formation
+          <Target className="h-6 w-6 text-primary" /> Échéances de formation
         </h1>
         <p className="text-muted-foreground max-w-2xl">
           Les échéances sont calculées automatiquement à partir des applicabilités et des sessions enregistrées.
@@ -83,10 +113,10 @@ export default function DueItemsPage() {
           <RefreshCw className={`h-4 w-4 mr-2 ${computing ? "animate-spin" : ""}`} />
           {computing ? "Calcul…" : "Recalculer les échéances"}
         </Button>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Tous les statuts</option>
-          {statuses.map(s => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
+          {statuses.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}
         </select>
       </div>
 
@@ -107,8 +137,8 @@ export default function DueItemsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusVariants[item.status] ?? ""}`}>
-                  {item.status.replace(/_/g, " ")}
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${item.closed_at ? statusVariants.closed : getStatusClass(item.status)}`}>
+                  {item.closed_at ? statusLabels.closed : getStatusLabel(item.status)}
                 </span>
                 {!item.closed_at && (
                   <Button size="icon" variant="ghost" title="Clôturer" onClick={() => handleClose(item.id)}>
@@ -120,6 +150,14 @@ export default function DueItemsPage() {
           </Card>
         ))}
       </div>
+
+      <TablePagination
+        pageIndex={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        pageCount={Math.ceil(totalCount / PAGE_SIZE)}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

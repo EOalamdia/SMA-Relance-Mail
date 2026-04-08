@@ -18,7 +18,7 @@ import type {
 const API_BASE_URL = import.meta.env.VITE_API_URL
 
 if (!API_BASE_URL) {
-  throw new Error("VITE_API_URL is required. Configure it from app slug/path placeholders.")
+  throw new Error("VITE_API_URL est requis. Configurez-le à partir des placeholders de slug/chemin d'application.")
 }
 
 function getCsrfTokenFromCookie(): string | null {
@@ -135,7 +135,7 @@ async function apiRequest<T>(path: string, options: RequestInit = {}, _isRetry =
   if (!response.ok) {
     const payload = await response.json().catch(() => ({ detail: `${response.status} ${response.statusText}` }))
     const errorMessage = typeof payload.detail === 'string' ? payload.detail : JSON.stringify(payload.detail, null, 2)
-    throw new Error(errorMessage || "API error")
+    throw new Error(errorMessage || "Erreur API")
   }
 
   if (response.status === 204) {
@@ -207,8 +207,12 @@ export const starterApi = {
 // ---------------------------------------------------------------------------
 
 export const organizationTypesApi = {
-  list(): Promise<ListResponse<OrganizationType>> {
-    return apiRequest<ListResponse<OrganizationType>>("/v1/organization-types")
+  list(params?: { search?: string; limit?: number; offset?: number }): Promise<ListResponse<OrganizationType>> {
+    const qs = new URLSearchParams()
+    if (params?.search) qs.set("search", params.search)
+    if (params?.limit) { qs.set("limit", String(params.limit)); if (params.offset !== undefined) qs.set("offset", String(params.offset)) }
+    const query = qs.toString() ? `?${qs}` : ""
+    return apiRequest<ListResponse<OrganizationType>>(`/v1/organization-types${query}`)
   },
   get(id: string): Promise<OrganizationType> {
     return apiRequest<OrganizationType>(`/v1/organization-types/${id}`)
@@ -235,9 +239,13 @@ export const organizationTypesApi = {
 // ---------------------------------------------------------------------------
 
 export const organizationsApi = {
-  list(typeId?: string): Promise<ListResponse<Organization>> {
-    const qs = typeId ? `?type_id=${typeId}` : ""
-    return apiRequest<ListResponse<Organization>>(`/v1/organizations${qs}`)
+  list(typeId?: string, params?: { search?: string; limit?: number; offset?: number }): Promise<ListResponse<Organization>> {
+    const qs = new URLSearchParams()
+    if (typeId) qs.set("type_id", typeId)
+    if (params?.search) qs.set("search", params.search)
+    if (params?.limit) { qs.set("limit", String(params.limit)); if (params.offset !== undefined) qs.set("offset", String(params.offset)) }
+    const query = qs.toString() ? `?${qs}` : ""
+    return apiRequest<ListResponse<Organization>>(`/v1/organizations${query}`)
   },
   get(id: string): Promise<Organization> {
     return apiRequest<Organization>(`/v1/organizations/${id}`)
@@ -264,9 +272,13 @@ export const organizationsApi = {
 // ---------------------------------------------------------------------------
 
 export const contactsApi = {
-  list(orgId?: string): Promise<ListResponse<Contact>> {
-    const qs = orgId ? `?organization_id=${orgId}` : ""
-    return apiRequest<ListResponse<Contact>>(`/v1/contacts${qs}`)
+  list(orgId?: string, params?: { search?: string; limit?: number; offset?: number }): Promise<ListResponse<Contact>> {
+    const qs = new URLSearchParams()
+    if (orgId) qs.set("organization_id", orgId)
+    if (params?.search) qs.set("search", params.search)
+    if (params?.limit) { qs.set("limit", String(params.limit)); if (params.offset !== undefined) qs.set("offset", String(params.offset)) }
+    const query = qs.toString() ? `?${qs}` : ""
+    return apiRequest<ListResponse<Contact>>(`/v1/contacts${query}`)
   },
   get(id: string): Promise<Contact> {
     return apiRequest<Contact>(`/v1/contacts/${id}`)
@@ -293,8 +305,12 @@ export const contactsApi = {
 // ---------------------------------------------------------------------------
 
 export const trainingCoursesApi = {
-  list(): Promise<ListResponse<TrainingCourse>> {
-    return apiRequest<ListResponse<TrainingCourse>>("/v1/training-courses")
+  list(params?: { search?: string; limit?: number; offset?: number }): Promise<ListResponse<TrainingCourse>> {
+    const qs = new URLSearchParams()
+    if (params?.search) qs.set("search", params.search)
+    if (params?.limit) { qs.set("limit", String(params.limit)); if (params.offset !== undefined) qs.set("offset", String(params.offset)) }
+    const query = qs.toString() ? `?${qs}` : ""
+    return apiRequest<ListResponse<TrainingCourse>>(`/v1/training-courses${query}`)
   },
   get(id: string): Promise<TrainingCourse> {
     return apiRequest<TrainingCourse>(`/v1/training-courses/${id}`)
@@ -321,11 +337,12 @@ export const trainingCoursesApi = {
 // ---------------------------------------------------------------------------
 
 export const courseApplicabilityApi = {
-  list(orgId?: string, courseId?: string, orgTypeId?: string): Promise<ListResponse<CourseApplicability>> {
+  list(orgId?: string, courseId?: string, orgTypeId?: string, pagination?: { limit?: number; offset?: number }): Promise<ListResponse<CourseApplicability>> {
     const params = new URLSearchParams()
     if (orgId) params.set("organization_id", orgId)
     if (orgTypeId) params.set("organization_type_id", orgTypeId)
     if (courseId) params.set("course_id", courseId)
+    if (pagination?.limit) { params.set("limit", String(pagination.limit)); if (pagination.offset !== undefined) params.set("offset", String(pagination.offset)) }
     const qs = params.toString() ? `?${params}` : ""
     return apiRequest<ListResponse<CourseApplicability>>(`/v1/course-applicability${qs}`)
   },
@@ -345,10 +362,11 @@ export const courseApplicabilityApi = {
 // ---------------------------------------------------------------------------
 
 export const trainingSessionsApi = {
-  list(orgId?: string, courseId?: string): Promise<ListResponse<TrainingSession>> {
+  list(orgId?: string, courseId?: string, pagination?: { limit?: number; offset?: number }): Promise<ListResponse<TrainingSession>> {
     const params = new URLSearchParams()
     if (orgId) params.set("organization_id", orgId)
     if (courseId) params.set("course_id", courseId)
+    if (pagination?.limit) { params.set("limit", String(pagination.limit)); if (pagination.offset !== undefined) params.set("offset", String(pagination.offset)) }
     const qs = params.toString() ? `?${params}` : ""
     return apiRequest<ListResponse<TrainingSession>>(`/v1/training-sessions${qs}`)
   },
@@ -377,9 +395,12 @@ export const trainingSessionsApi = {
 // ---------------------------------------------------------------------------
 
 export const dueItemsApi = {
-  list(status?: string): Promise<ListResponse<DueItem>> {
-    const qs = status ? `?status=${status}` : ""
-    return apiRequest<ListResponse<DueItem>>(`/v1/due-items${qs}`)
+  list(status?: string, pagination?: { limit?: number; offset?: number }): Promise<ListResponse<DueItem>> {
+    const qs = new URLSearchParams()
+    if (status) qs.set("status", status)
+    if (pagination?.limit) { qs.set("limit", String(pagination.limit)); if (pagination.offset !== undefined) qs.set("offset", String(pagination.offset)) }
+    const query = qs.toString() ? `?${qs}` : ""
+    return apiRequest<ListResponse<DueItem>>(`/v1/due-items${query}`)
   },
   get(id: string): Promise<DueItem> {
     return apiRequest<DueItem>(`/v1/due-items/${id}`)
@@ -400,8 +421,12 @@ export const dueItemsApi = {
 // ---------------------------------------------------------------------------
 
 export const reminderRulesApi = {
-  list(): Promise<ListResponse<ReminderRule>> {
-    return apiRequest<ListResponse<ReminderRule>>("/v1/reminder-rules")
+  list(params?: { search?: string; limit?: number; offset?: number }): Promise<ListResponse<ReminderRule>> {
+    const qs = new URLSearchParams()
+    if (params?.search) qs.set("search", params.search)
+    if (params?.limit) { qs.set("limit", String(params.limit)); if (params.offset !== undefined) qs.set("offset", String(params.offset)) }
+    const query = qs.toString() ? `?${qs}` : ""
+    return apiRequest<ListResponse<ReminderRule>>(`/v1/reminder-rules${query}`)
   },
   get(id: string): Promise<ReminderRule> {
     return apiRequest<ReminderRule>(`/v1/reminder-rules/${id}`)
@@ -428,8 +453,12 @@ export const reminderRulesApi = {
 // ---------------------------------------------------------------------------
 
 export const emailTemplatesApi = {
-  list(): Promise<ListResponse<EmailTemplate>> {
-    return apiRequest<ListResponse<EmailTemplate>>("/v1/email-templates")
+  list(params?: { search?: string; limit?: number; offset?: number }): Promise<ListResponse<EmailTemplate>> {
+    const qs = new URLSearchParams()
+    if (params?.search) qs.set("search", params.search)
+    if (params?.limit) { qs.set("limit", String(params.limit)); if (params.offset !== undefined) qs.set("offset", String(params.offset)) }
+    const query = qs.toString() ? `?${qs}` : ""
+    return apiRequest<ListResponse<EmailTemplate>>(`/v1/email-templates${query}`)
   },
   get(id: string): Promise<EmailTemplate> {
     return apiRequest<EmailTemplate>(`/v1/email-templates/${id}`)
@@ -456,9 +485,13 @@ export const emailTemplatesApi = {
 // ---------------------------------------------------------------------------
 
 export const reminderJobsApi = {
-  list(status?: string): Promise<ListResponse<ReminderJob>> {
-    const qs = status ? `?status=${status}` : ""
-    return apiRequest<ListResponse<ReminderJob>>(`/v1/reminder-jobs${qs}`)
+  list(status?: string, params?: { search?: string; limit?: number; offset?: number }): Promise<ListResponse<ReminderJob>> {
+    const qs = new URLSearchParams()
+    if (status) qs.set("status", status)
+    if (params?.search) qs.set("search", params.search)
+    if (params?.limit) { qs.set("limit", String(params.limit)); if (params.offset !== undefined) qs.set("offset", String(params.offset)) }
+    const query = qs.toString() ? `?${qs}` : ""
+    return apiRequest<ListResponse<ReminderJob>>(`/v1/reminder-jobs${query}`)
   },
   get(id: string): Promise<ReminderJob> {
     return apiRequest<ReminderJob>(`/v1/reminder-jobs/${id}`)
@@ -479,9 +512,13 @@ export const reminderJobsApi = {
 // ---------------------------------------------------------------------------
 
 export const emailDeliveriesApi = {
-  list(jobId?: string): Promise<ListResponse<EmailDelivery>> {
-    const qs = jobId ? `?job_id=${jobId}` : ""
-    return apiRequest<ListResponse<EmailDelivery>>(`/v1/email-deliveries${qs}`)
+  list(params?: { job_id?: string; search?: string; limit?: number; offset?: number }): Promise<ListResponse<EmailDelivery>> {
+    const qs = new URLSearchParams()
+    if (params?.job_id) qs.set("job_id", params.job_id)
+    if (params?.search) qs.set("search", params.search)
+    if (params?.limit) { qs.set("limit", String(params.limit)); if (params.offset !== undefined) qs.set("offset", String(params.offset)) }
+    const query = qs.toString() ? `?${qs}` : ""
+    return apiRequest<ListResponse<EmailDelivery>>(`/v1/email-deliveries${query}`)
   },
   get(id: string): Promise<EmailDelivery> {
     return apiRequest<EmailDelivery>(`/v1/email-deliveries/${id}`)
@@ -515,8 +552,12 @@ export const dashboardApi = {
 // ---------------------------------------------------------------------------
 
 export const communicationTopicsApi = {
-  list(): Promise<ListResponse<CommunicationTopic>> {
-    return apiRequest<ListResponse<CommunicationTopic>>("/v1/communication-topics")
+  list(params?: { search?: string; limit?: number; offset?: number }): Promise<ListResponse<CommunicationTopic>> {
+    const qs = new URLSearchParams()
+    if (params?.search) qs.set("search", params.search)
+    if (params?.limit) { qs.set("limit", String(params.limit)); if (params.offset !== undefined) qs.set("offset", String(params.offset)) }
+    const query = qs.toString() ? `?${qs}` : ""
+    return apiRequest<ListResponse<CommunicationTopic>>(`/v1/communication-topics${query}`)
   },
   get(id: string): Promise<CommunicationTopic> {
     return apiRequest<CommunicationTopic>(`/v1/communication-topics/${id}`)
@@ -543,11 +584,12 @@ export const communicationTopicsApi = {
 // ---------------------------------------------------------------------------
 
 export const emailSubscriptionsApi = {
-  list(params?: { is_subscribed?: boolean; communication_topic_id?: string; email?: string }): Promise<ListResponse<EmailSubscription>> {
+  list(params?: { is_subscribed?: boolean; communication_topic_id?: string; email?: string; limit?: number; offset?: number }): Promise<ListResponse<EmailSubscription>> {
     const qs = new URLSearchParams()
     if (params?.is_subscribed !== undefined) qs.set("is_subscribed", String(params.is_subscribed))
     if (params?.communication_topic_id) qs.set("communication_topic_id", params.communication_topic_id)
     if (params?.email) qs.set("email", params.email)
+    if (params?.limit) { qs.set("limit", String(params.limit)); if (params.offset !== undefined) qs.set("offset", String(params.offset)) }
     const query = qs.toString() ? `?${qs}` : ""
     return apiRequest<ListResponse<EmailSubscription>>(`/v1/email-subscriptions${query}`)
   },
@@ -567,10 +609,11 @@ export const emailSubscriptionsApi = {
 // ---------------------------------------------------------------------------
 
 export const unsubscribeEventsApi = {
-  list(params?: { event_type?: string; email?: string }): Promise<ListResponse<UnsubscribeEvent>> {
+  list(params?: { event_type?: string; email?: string; limit?: number; offset?: number }): Promise<ListResponse<UnsubscribeEvent>> {
     const qs = new URLSearchParams()
     if (params?.event_type) qs.set("event_type", params.event_type)
     if (params?.email) qs.set("email", params.email)
+    if (params?.limit) { qs.set("limit", String(params.limit)); if (params.offset !== undefined) qs.set("offset", String(params.offset)) }
     const query = qs.toString() ? `?${qs}` : ""
     return apiRequest<ListResponse<UnsubscribeEvent>>(`/v1/unsubscribe-events${query}`)
   },
