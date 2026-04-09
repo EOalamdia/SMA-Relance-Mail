@@ -155,11 +155,6 @@ export default function ReminderRulesPage() {
         searchPlaceholder="Rechercher une règle…"
       />
 
-      <TableToolbar
-        onSearch={(v) => { setSearch(v); setPage(0) }}
-        searchPlaceholder="Rechercher une règle…"
-      />
-
       <div className="space-y-3">
         {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
         {error && <Card className="border-destructive/50"><CardContent className="pt-4"><p className="text-sm text-destructive">{error}</p></CardContent></Card>}
