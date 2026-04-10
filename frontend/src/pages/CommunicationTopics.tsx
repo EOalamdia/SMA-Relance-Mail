@@ -83,10 +83,19 @@ export default function CommunicationTopicsPage() {
     } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
   }
 
-  async function handleDeactivate(id: string) {
-    if (!confirm("Désactiver ce sujet de communication ?")) return
+  async function handleSetActive(item: CommunicationTopic, isActive: boolean) {
+    const action = isActive ? "activer" : "désactiver"
+    if (!confirm(`${action.charAt(0).toUpperCase()}${action.slice(1)} ce sujet de communication ?`)) return
     try {
-      await communicationTopicsApi.deactivate(id)
+      await communicationTopicsApi.setActive(item.id, isActive)
+      load()
+    } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
+  }
+
+  async function handleDelete(item: CommunicationTopic) {
+    if (!confirm(`Supprimer définitivement le sujet "${item.label}" ?`)) return
+    try {
+      await communicationTopicsApi.remove(item.id)
       load()
     } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
   }
@@ -180,9 +189,12 @@ export default function CommunicationTopicsPage() {
                   </div>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="sm" onClick={() => startEdit(item)}><Pencil className="h-4 w-4" /></Button>
-                    {item.is_active && (
-                      <Button variant="ghost" size="sm" onClick={() => handleDeactivate(item.id)} className="text-destructive">Désactiver</Button>
+                    {item.is_active ? (
+                      <Button variant="ghost" size="sm" onClick={() => handleSetActive(item, false)} className="text-destructive">Désactiver</Button>
+                    ) : (
+                      <Button variant="ghost" size="sm" onClick={() => handleSetActive(item, true)}>Activer</Button>
                     )}
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(item)} className="text-destructive">Supprimer</Button>
                   </div>
                 </div>
               )}

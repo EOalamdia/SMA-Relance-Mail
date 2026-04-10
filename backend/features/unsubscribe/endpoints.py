@@ -161,12 +161,45 @@ def update_communication_topic(
     return CommunicationTopicOut(**response.data[0])
 
 
+def _topic_reference_counts(topic_id: str) -> dict[str, int]:
+    """Count topic references in related tables to protect hard delete."""
+    tables = [
+        "email_templates",
+        "reminder_rules",
+        "reminder_jobs",
+        "email_subscriptions",
+        "unsubscribe_tokens",
+        "unsubscribe_events",
+    ]
+    counts: dict[str, int] = {}
+    for table_name in tables:
+        response = (
+            _table(table_name)
+            .select("id", count="exact")
+            .eq("communication_topic_id", topic_id)
+            .limit(1)
+            .execute()
+        )
+        counts[table_name] = response.count or 0
+    return counts
+
+
 @topics_router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def deactivate_communication_topic(item_id: UUID, _user: UserContext = Depends(get_current_user)):
+def delete_communication_topic(item_id: UUID, _user: UserContext = Depends(get_current_user)):
     exists = _table("communication_topics").select("id").eq("id", str(item_id)).limit(1).execute()
     if not exists.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Topic de communication non trouvé.")
-    _table("communication_topics").update({"is_active": False}).eq("id", str(item_id)).execute()
+
+    counts = _topic_reference_counts(str(item_id))
+    referenced = [f"{table_name}({count})" for table_name, count in counts.items() if count > 0]
+    if referenced:
+        refs = ", ".join(referenced)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Suppression impossible: le topic est encore référencé dans {refs}. Désactivez-le à la place.",
+        )
+
+    _table("communication_topics").delete().eq("id", str(item_id)).execute()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

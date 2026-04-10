@@ -577,7 +577,19 @@ export const communicationTopicsApi = {
       body: JSON.stringify(data),
     })
   },
+  setActive(id: string, isActive: boolean): Promise<CommunicationTopic> {
+    return apiRequest<CommunicationTopic>(`/v1/communication-topics/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_active: isActive }),
+    })
+  },
+  activate(id: string): Promise<CommunicationTopic> {
+    return communicationTopicsApi.setActive(id, true)
+  },
   deactivate(id: string): Promise<void> {
+    return communicationTopicsApi.setActive(id, false).then(() => undefined)
+  },
+  remove(id: string): Promise<void> {
     return apiRequest<void>(`/v1/communication-topics/${id}`, { method: "DELETE" })
   },
 }
