@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import hmac
 
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
@@ -45,9 +46,9 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         header_token = request.headers.get(CSRF_HEADER_NAME)
 
         if not cookie_token or not header_token or not hmac.compare_digest(cookie_token, header_token):
-            raise HTTPException(
+            return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="CSRF token missing or invalid",
+                content={"detail": "CSRF token missing or invalid"},
                 headers={"X-CSRF-Error": "token_mismatch"},
             )
 
