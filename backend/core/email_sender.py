@@ -6,7 +6,9 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import smtplib
+from html import escape, unescape
 from datetime import date, datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -46,6 +48,25 @@ def _render_template(template_text: str, variables: dict) -> str:
     for key, value in variables.items():
         result = result.replace("{{" + key + "}}", str(value) if value is not None else "")
     return result
+
+
+def _is_html_content(text: str) -> bool:
+    """Best-effort detection of HTML template content."""
+    return bool(re.search(r"<\s*[a-zA-Z][^>]*>", text or ""))
+
+
+def _html_to_text(html_content: str) -> str:
+    """Very small HTML -> text fallback for multipart/alternative."""
+    text = re.sub(r"<\s*br\s*/?\s*>", "\n", html_content, flags=re.IGNORECASE)
+    text = re.sub(r"<\s*/\s*p\s*>", "\n\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    return unescape(text).strip()
+
+
+def _plain_to_html(text_content: str) -> str:
+    """Convert plain text into safe minimal HTML."""
+    safe = escape(text_content or "")
+    return "<html><body><pre style=\"white-space: pre-wrap; font-family: inherit;\">" + safe + "</pre></body></html>"
 
 
 def _build_template_variables(job: dict) -> dict:
@@ -137,12 +158,21 @@ def send_reminder_email(job: dict) -> bool:
             # Continue sending without unsubscribe link rather than failing
 
     # Inject unsubscribe footer into body if URL was generated
+    body_is_html = _is_html_content(body)
     if unsub_url:
-        unsub_footer = (
-            "\n\n---\n"
-            "Si vous ne souhaitez plus recevoir ces emails, "
-            f"cliquez ici pour vous désinscrire : {unsub_url}\n"
-        )
+        if body_is_html:
+            unsub_url_safe = escape(unsub_url, quote=True)
+            unsub_footer = (
+                "<hr>"
+                "<p>Si vous ne souhaitez plus recevoir ces emails, "
+                f"<a href=\"{unsub_url_safe}\">cliquez ici pour vous désinscrire</a>.</p>"
+            )
+        else:
+            unsub_footer = (
+                "\n\n---\n"
+                "Si vous ne souhaitez plus recevoir ces emails, "
+                f"cliquez ici pour vous désinscrire : {unsub_url}\n"
+            )
         body = body + unsub_footer
         variables["unsubscribe_url"] = unsub_url
 
@@ -170,7 +200,13 @@ def send_reminder_email(job: dict) -> bool:
         for header_name, header_value in unsub_headers.items():
             msg[header_name] = header_value
 
-        msg.attach(MIMEText(body, "plain", "utf-8"))
+        # Support both plain-text templates and HTML templates.
+        if body_is_html:
+            msg.attach(MIMEText(_html_to_text(body), "plain", "utf-8"))
+            msg.attach(MIMEText(body, "html", "utf-8"))
+        else:
+            msg.attach(MIMEText(body, "plain", "utf-8"))
+            msg.attach(MIMEText(_plain_to_html(body), "html", "utf-8"))
 
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
             server.starttls()

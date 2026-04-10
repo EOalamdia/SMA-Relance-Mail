@@ -4,7 +4,7 @@ import { Link2, Plus, Trash2 } from "lucide-react"
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-core/components/ui/card"
-import { TablePagination } from "@ui-core/components/ui/table"
+import { TableToolbar, TablePagination } from "@ui-core/components/ui/table"
 
 import type { CourseApplicability, Organization, OrganizationType, TrainingCourse } from "../types/sma"
 import { courseApplicabilityApi, organizationsApi, organizationTypesApi, trainingCoursesApi } from "../services/api"
@@ -22,6 +22,7 @@ export default function CourseApplicabilityPage() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
+  const [search, setSearch] = useState("")
 
   const [scopeMode, setScopeMode] = useState<ScopeMode>("organization")
   const [newOrgId, setNewOrgId] = useState("")
@@ -29,13 +30,16 @@ export default function CourseApplicabilityPage() {
   const [newCourseId, setNewCourseId] = useState("")
   const [creating, setCreating] = useState(false)
 
-  useEffect(() => { load() }, [page])
+  useEffect(() => {
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
+  }, [page, search])
 
   async function load() {
     setLoading(true); setError(null)
     try {
       const [a, o, ot, c] = await Promise.all([
-        courseApplicabilityApi.list(undefined, undefined, undefined, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }),
+        courseApplicabilityApi.list(undefined, undefined, undefined, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }, search || undefined),
         organizationsApi.list(),
         organizationTypesApi.list(),
         trainingCoursesApi.list(),
@@ -131,6 +135,11 @@ export default function CourseApplicabilityPage() {
           </form>
         </CardContent>
       </Card>
+
+      <TableToolbar
+        onSearch={(v) => { setSearch(v); setPage(0) }}
+        searchPlaceholder="Rechercher une applicabilité…"
+      />
 
       <div className="space-y-3">
         {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}

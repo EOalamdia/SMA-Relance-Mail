@@ -4,7 +4,7 @@ import { CalendarDays, Pencil, Plus, Save, Trash2, X } from "lucide-react"
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@ui-core/components/ui/card"
-import { TablePagination } from "@ui-core/components/ui/table"
+import { TableToolbar, TablePagination } from "@ui-core/components/ui/table"
 
 import type { TrainingSession, Organization, TrainingCourse } from "../types/sma"
 import { trainingSessionsApi, organizationsApi, trainingCoursesApi } from "../services/api"
@@ -21,6 +21,7 @@ export default function TrainingSessionsPage() {
   const [error, setError] = useState<string | null>(null)
   const [filterOrg, setFilterOrg] = useState("")
   const [filterCourse, setFilterCourse] = useState("")
+  const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
 
@@ -31,13 +32,16 @@ export default function TrainingSessionsPage() {
   const [editState, setEditState] = useState<EditState | null>(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { load() }, [filterOrg, filterCourse, page])
+  useEffect(() => {
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
+  }, [filterOrg, filterCourse, search, page])
 
   async function load() {
     setLoading(true); setError(null)
     try {
       const [s, o, c] = await Promise.all([
-        trainingSessionsApi.list(filterOrg || undefined, filterCourse || undefined, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }),
+        trainingSessionsApi.list(filterOrg || undefined, filterCourse || undefined, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }, search || undefined),
         organizationsApi.list(),
         trainingCoursesApi.list(),
       ])
@@ -112,6 +116,11 @@ export default function TrainingSessionsPage() {
           {courses.map(c => <option key={c.id} value={c.id}>[{c.code}] {c.title}</option>)}
         </select>
       </div>
+
+      <TableToolbar
+        onSearch={(v) => { setSearch(v); setPage(0) }}
+        searchPlaceholder="Rechercher une session…"
+      />
 
       <Card>
         <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Plus className="h-4 w-4" /> Nouvelle session</CardTitle>

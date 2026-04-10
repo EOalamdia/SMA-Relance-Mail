@@ -337,11 +337,12 @@ export const trainingCoursesApi = {
 // ---------------------------------------------------------------------------
 
 export const courseApplicabilityApi = {
-  list(orgId?: string, courseId?: string, orgTypeId?: string, pagination?: { limit?: number; offset?: number }): Promise<ListResponse<CourseApplicability>> {
+  list(orgId?: string, courseId?: string, orgTypeId?: string, pagination?: { limit?: number; offset?: number }, search?: string): Promise<ListResponse<CourseApplicability>> {
     const params = new URLSearchParams()
     if (orgId) params.set("organization_id", orgId)
     if (orgTypeId) params.set("organization_type_id", orgTypeId)
     if (courseId) params.set("course_id", courseId)
+    if (search) params.set("search", search)
     if (pagination?.limit) { params.set("limit", String(pagination.limit)); if (pagination.offset !== undefined) params.set("offset", String(pagination.offset)) }
     const qs = params.toString() ? `?${params}` : ""
     return apiRequest<ListResponse<CourseApplicability>>(`/v1/course-applicability${qs}`)
@@ -362,10 +363,11 @@ export const courseApplicabilityApi = {
 // ---------------------------------------------------------------------------
 
 export const trainingSessionsApi = {
-  list(orgId?: string, courseId?: string, pagination?: { limit?: number; offset?: number }): Promise<ListResponse<TrainingSession>> {
+  list(orgId?: string, courseId?: string, pagination?: { limit?: number; offset?: number }, search?: string): Promise<ListResponse<TrainingSession>> {
     const params = new URLSearchParams()
     if (orgId) params.set("organization_id", orgId)
     if (courseId) params.set("course_id", courseId)
+    if (search) params.set("search", search)
     if (pagination?.limit) { params.set("limit", String(pagination.limit)); if (pagination.offset !== undefined) params.set("offset", String(pagination.offset)) }
     const qs = params.toString() ? `?${params}` : ""
     return apiRequest<ListResponse<TrainingSession>>(`/v1/training-sessions${qs}`)
@@ -395,9 +397,10 @@ export const trainingSessionsApi = {
 // ---------------------------------------------------------------------------
 
 export const dueItemsApi = {
-  list(status?: string, pagination?: { limit?: number; offset?: number }): Promise<ListResponse<DueItem>> {
+  list(status?: string, pagination?: { limit?: number; offset?: number }, search?: string): Promise<ListResponse<DueItem>> {
     const qs = new URLSearchParams()
     if (status) qs.set("status", status)
+    if (search) qs.set("search", search)
     if (pagination?.limit) { qs.set("limit", String(pagination.limit)); if (pagination.offset !== undefined) qs.set("offset", String(pagination.offset)) }
     const query = qs.toString() ? `?${qs}` : ""
     return apiRequest<ListResponse<DueItem>>(`/v1/due-items${query}`)

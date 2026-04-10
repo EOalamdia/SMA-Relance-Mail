@@ -4,7 +4,7 @@ import { Target, RefreshCw, XCircle } from "lucide-react"
 import { Badge } from "@ui-core/components/ui/badge"
 import { Button } from "@ui-core/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@ui-core/components/ui/card"
-import { TablePagination } from "@ui-core/components/ui/table"
+import { TableToolbar, TablePagination } from "@ui-core/components/ui/table"
 
 import type { DueItem, DueStatus } from "../types/sma"
 import { dueItemsApi, organizationsApi, trainingCoursesApi } from "../services/api"
@@ -24,16 +24,20 @@ export default function DueItemsPage() {
   const [error, setError] = useState<string | null>(null)
   const [computing, setComputing] = useState(false)
   const [filterStatus, setFilterStatus] = useState("")
+  const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
 
-  useEffect(() => { load() }, [filterStatus, page])
+  useEffect(() => {
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
+  }, [filterStatus, search, page])
 
   async function load() {
     setLoading(true); setError(null)
     try {
       const [d, o, c] = await Promise.all([
-        dueItemsApi.list(filterStatus || undefined, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }),
+        dueItemsApi.list(filterStatus || undefined, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }, search || undefined),
         organizationsApi.list(),
         trainingCoursesApi.list(),
       ])
@@ -119,6 +123,11 @@ export default function DueItemsPage() {
           {statuses.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}
         </select>
       </div>
+
+      <TableToolbar
+        onSearch={(v) => { setSearch(v); setPage(0) }}
+        searchPlaceholder="Rechercher une échéance…"
+      />
 
       <div className="space-y-3">
         {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}

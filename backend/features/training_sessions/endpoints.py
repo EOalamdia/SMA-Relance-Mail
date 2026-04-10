@@ -29,15 +29,48 @@ def _table():
 def list_training_sessions(
     organization_id: UUID | None = Query(None),
     course_id: UUID | None = Query(None),
+    search: str | None = Query(None),
     limit: int = Query(0, ge=0),
     offset: int = Query(0, ge=0),
     _user: UserContext = Depends(get_current_user),
 ):
+    # Resolve IDs matching the search term across related tables
+    search_org_ids: list[str] | None = None
+    search_course_ids: list[str] | None = None
+    if search:
+        org_rows = (
+            get_schema_table(_SCHEMA, "organizations")
+            .select("id")
+            .ilike("name", f"%{search}%")
+            .is_("archived_at", "null")
+            .execute()
+            .data or []
+        )
+        search_org_ids = [r["id"] for r in org_rows]
+        course_rows = (
+            get_schema_table(_SCHEMA, "training_courses")
+            .select("id")
+            .or_(f"code.ilike.%{search}%,title.ilike.%{search}%")
+            .execute()
+            .data or []
+        )
+        search_course_ids = [r["id"] for r in course_rows]
+
     query = _table().select("*", count="exact")
     if organization_id:
         query = query.eq("organization_id", str(organization_id))
     if course_id:
         query = query.eq("course_id", str(course_id))
+    if search:
+        # Build OR filter: notes/provider match OR org/course name match
+        or_parts = [f"notes.ilike.%{search}%"]
+        if search_org_ids:
+            for oid in search_org_ids:
+                or_parts.append(f"organization_id.eq.{oid}")
+        if search_course_ids:
+            for cid in search_course_ids:
+                or_parts.append(f"course_id.eq.{cid}")
+        query = query.or_(",".join(or_parts))
     query = query.order("session_date", desc=True)
     if limit > 0:
         query = query.range(offset, offset + limit - 1)
