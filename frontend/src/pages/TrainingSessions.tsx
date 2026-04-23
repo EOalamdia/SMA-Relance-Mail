@@ -105,12 +105,12 @@ export default function TrainingSessionsPage() {
       </header>
 
       <div className="flex flex-wrap items-center gap-3">
-        <select value={filterOrg} onChange={e => { setFilterOrg(e.target.value); setPage(0) }}
+        <select name="filter-org" value={filterOrg} onChange={e => { setFilterOrg(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Tous les organismes</option>
           {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
-        <select value={filterCourse} onChange={e => { setFilterCourse(e.target.value); setPage(0) }}
+        <select name="filter-course" value={filterCourse} onChange={e => { setFilterCourse(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Toutes les formations</option>
           {courses.map(c => <option key={c.id} value={c.id}>[{c.code}] {c.title}</option>)}
@@ -128,24 +128,24 @@ export default function TrainingSessionsPage() {
         <CardContent>
           <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
-              <label className="text-sm font-medium">Organisme <span className="text-destructive">*</span></label>
-              <select value={newOrgId} onChange={e => setNewOrgId(e.target.value)} required
+              <label htmlFor="new-session-org" className="text-sm font-medium">Organisme <span className="text-destructive">*</span></label>
+              <select id="new-session-org" name="organization_id" value={newOrgId} onChange={e => setNewOrgId(e.target.value)} required
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Choisir…</option>
                 {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
               </select>
             </div>
             <div className="flex-1 space-y-1">
-              <label className="text-sm font-medium">Formation <span className="text-destructive">*</span></label>
-              <select value={newCourseId} onChange={e => setNewCourseId(e.target.value)} required
+              <label htmlFor="new-session-course" className="text-sm font-medium">Formation <span className="text-destructive">*</span></label>
+              <select id="new-session-course" name="course_id" value={newCourseId} onChange={e => setNewCourseId(e.target.value)} required
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Choisir…</option>
                 {courses.map(c => <option key={c.id} value={c.id}>[{c.code}] {c.title}</option>)}
               </select>
             </div>
             <div className="w-44 space-y-1">
-              <label className="text-sm font-medium">Date <span className="text-destructive">*</span></label>
-              <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} required
+              <label htmlFor="new-session-date" className="text-sm font-medium">Date <span className="text-destructive">*</span></label>
+              <input id="new-session-date" name="session_date" type="date" value={newDate} onChange={e => setNewDate(e.target.value)} required
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <Button type="submit" disabled={creating || !newOrgId || !newCourseId || !newDate}>{creating ? "…" : "Créer"}</Button>
@@ -162,17 +162,17 @@ export default function TrainingSessionsPage() {
           <Card key={item.id} className="border-primary/40">
             <CardContent className="pt-4 space-y-3">
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="space-y-1"><label className="text-xs font-medium">Date session</label><input type="date" value={editState.session_date} onChange={e => setEditState(p => p && { ...p, session_date: e.target.value })}
+                <div className="space-y-1"><label htmlFor="edit-session-date" className="text-xs font-medium">Date session</label><input id="edit-session-date" name="session_date" type="date" value={editState.session_date} onChange={e => setEditState(p => p && { ...p, session_date: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" /></div>
-                <div className="space-y-1"><label className="text-xs font-medium">Date expiration</label><input type="date" value={editState.expiry_date} onChange={e => setEditState(p => p && { ...p, expiry_date: e.target.value })}
+                <div className="space-y-1"><label htmlFor="edit-session-expiry" className="text-xs font-medium">Date expiration</label><input id="edit-session-expiry" name="expiry_date" type="date" value={editState.expiry_date} onChange={e => setEditState(p => p && { ...p, expiry_date: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" /></div>
-                <div className="space-y-1"><label className="text-xs font-medium">Statut</label><select value={editState.status} onChange={e => setEditState(p => p && { ...p, status: e.target.value })}
+                <div className="space-y-1"><label htmlFor="edit-session-status" className="text-xs font-medium">Statut</label><select id="edit-session-status" name="status" value={editState.status} onChange={e => setEditState(p => p && { ...p, status: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                   <option value="planned">Planifiée</option><option value="completed">Terminée</option><option value="cancelled">Annulée</option>
                 </select></div>
-                <input value={editState.provider} onChange={e => setEditState(p => p && { ...p, provider: e.target.value })} placeholder="Prestataire"
+                <input name="provider" value={editState.provider} onChange={e => setEditState(p => p && { ...p, provider: e.target.value })} placeholder="Prestataire"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <textarea value={editState.notes} onChange={e => setEditState(p => p && { ...p, notes: e.target.value })} placeholder="Notes" rows={2} className="col-span-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                <textarea name="notes" value={editState.notes} onChange={e => setEditState(p => p && { ...p, notes: e.target.value })} placeholder="Notes" rows={2} className="col-span-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => handleSave(item.id)} disabled={saving}><Save className="h-3 w-3 mr-1" />{saving ? "…" : "Enregistrer"}</Button>

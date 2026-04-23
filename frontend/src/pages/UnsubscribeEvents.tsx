@@ -69,7 +69,7 @@ export default function UnsubscribeEventsPage() {
       </header>
 
       <div className="flex flex-wrap items-center gap-3">
-        <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(0) }}
+        <select name="filter-event-type" value={filterType} onChange={e => { setFilterType(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Tous les types</option>
           {eventTypes.map(t => <option key={t} value={t}>{EVENT_LABELS[t] || t}</option>)}

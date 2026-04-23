@@ -68,7 +68,7 @@ def create_organization(payload: OrganizationCreate, _user: UserContext = Depend
 
 @router.patch("/{item_id}", response_model=OrganizationOut)
 def update_organization(item_id: UUID, payload: OrganizationUpdate, _user: UserContext = Depends(get_current_user)):
-    changes = payload.model_dump(exclude_none=True)
+    changes = payload.model_dump(exclude_unset=True)
     if not changes:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Aucun champ a mettre a jour.")
     if "organization_type_id" in changes and changes["organization_type_id"]:

@@ -115,32 +115,32 @@ export default function ReminderRulesPage() {
         <CardContent>
           <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
-              <label className="text-sm font-medium">Libellé <span className="text-destructive">*</span></label>
-              <input value={newName} onChange={e => setNewName(e.target.value)} required maxLength={255} placeholder="Relance J-30"
+              <label htmlFor="new-rule-name" className="text-sm font-medium">Libellé <span className="text-destructive">*</span></label>
+              <input id="new-rule-name" name="name" value={newName} onChange={e => setNewName(e.target.value)} required maxLength={255} placeholder="Relance J-30"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="w-24 space-y-1">
-              <label className="text-sm font-medium">Signe</label>
-              <select value={newSign} onChange={e => setNewSign(e.target.value)}
+              <label htmlFor="new-rule-sign" className="text-sm font-medium">Signe</label>
+              <select id="new-rule-sign" name="offset_sign" value={newSign} onChange={e => setNewSign(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="-1">- (avant)</option><option value="0">0 (jour J)</option><option value="1">+ (après)</option>
               </select>
             </div>
             <div className="w-24 space-y-1">
-              <label className="text-sm font-medium">Décalage</label>
-              <input type="number" min={0} value={newOffset} onChange={e => setNewOffset(e.target.value)}
+              <label htmlFor="new-rule-offset" className="text-sm font-medium">Décalage</label>
+              <input id="new-rule-offset" name="offset_value" type="number" min={0} value={newOffset} onChange={e => setNewOffset(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="w-28 space-y-1">
-              <label className="text-sm font-medium">Unité</label>
-              <select value={newUnit} onChange={e => setNewUnit(e.target.value)}
+              <label htmlFor="new-rule-unit" className="text-sm font-medium">Unité</label>
+              <select id="new-rule-unit" name="offset_unit" value={newUnit} onChange={e => setNewUnit(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="day">Jours</option><option value="month">Mois</option>
               </select>
             </div>
             <div className="w-32 space-y-1">
-              <label className="text-sm font-medium">Déclencheur</label>
-              <select value={newTrigger} onChange={e => setNewTrigger(e.target.value)}
+              <label htmlFor="new-rule-trigger" className="text-sm font-medium">Déclencheur</label>
+              <select id="new-rule-trigger" name="trigger_type" value={newTrigger} onChange={e => setNewTrigger(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="before">Avant échéance</option><option value="on">Jour J</option><option value="after">Après échéance</option>
               </select>
@@ -164,28 +164,28 @@ export default function ReminderRulesPage() {
           <Card key={item.id} className="border-primary/40">
             <CardContent className="pt-4 space-y-3">
               <div className="grid gap-3 sm:grid-cols-4">
-                <input value={editState.name} onChange={e => setEditState(p => p && { ...p, name: e.target.value })} placeholder="Libellé"
+                <input name="name" value={editState.name} onChange={e => setEditState(p => p && { ...p, name: e.target.value })} placeholder="Libellé"
                   className="col-span-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <select value={editState.template_id} onChange={e => setEditState(p => p && { ...p, template_id: e.target.value })}
+                <select name="template_id" value={editState.template_id} onChange={e => setEditState(p => p && { ...p, template_id: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                   <option value="">Modèle par défaut</option>
                   {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
-                <select value={editState.recipient_strategy} onChange={e => setEditState(p => p && { ...p, recipient_strategy: e.target.value })}
+                <select name="recipient_strategy" value={editState.recipient_strategy} onChange={e => setEditState(p => p && { ...p, recipient_strategy: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                   <option value="primary">Contact principal</option><option value="role">Par rôle</option><option value="fallback">Secours</option>
                 </select>
-                <select value={editState.offset_sign} onChange={e => setEditState(p => p && { ...p, offset_sign: e.target.value })}
+                <select name="offset_sign" value={editState.offset_sign} onChange={e => setEditState(p => p && { ...p, offset_sign: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                   <option value="-1">- (avant)</option><option value="0">0 (jour J)</option><option value="1">+ (après)</option>
                 </select>
-                <input type="number" min={0} value={editState.offset_value} onChange={e => setEditState(p => p && { ...p, offset_value: e.target.value })} placeholder="Décalage"
+                <input name="offset_value" type="number" min={0} value={editState.offset_value} onChange={e => setEditState(p => p && { ...p, offset_value: e.target.value })} placeholder="Décalage"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <select value={editState.offset_unit} onChange={e => setEditState(p => p && { ...p, offset_unit: e.target.value })}
+                <select name="offset_unit" value={editState.offset_unit} onChange={e => setEditState(p => p && { ...p, offset_unit: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                   <option value="day">Jours</option><option value="month">Mois</option>
                 </select>
-                <select value={editState.trigger_type} onChange={e => setEditState(p => p && { ...p, trigger_type: e.target.value })}
+                <select name="trigger_type" value={editState.trigger_type} onChange={e => setEditState(p => p && { ...p, trigger_type: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                   <option value="before">Avant échéance</option><option value="on">Jour J</option><option value="after">Après échéance</option>
                 </select>

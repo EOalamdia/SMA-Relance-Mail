@@ -105,7 +105,7 @@ export default function ReminderJobsPage() {
           <Play className={`h-4 w-4 mr-2 ${sending ? "animate-pulse" : ""}`} />
           {sending ? "Envoi…" : "Envoyer les relances en attente"}
         </Button>
-        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(0) }}
+        <select name="filter-status" value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Tous les statuts</option>
           {statuses.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}

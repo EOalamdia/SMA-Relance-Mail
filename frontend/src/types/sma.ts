@@ -79,7 +79,7 @@ export interface Contact {
   organization_id: string
   first_name: string
   last_name: string
-  email: string
+  email: string | null
   phone: string | null
   role: string | null
   is_primary: boolean
@@ -91,7 +91,7 @@ export interface ContactCreate {
   organization_id: string
   first_name: string
   last_name: string
-  email: string
+  email?: string | null
   phone?: string | null
   role?: string | null
   is_primary?: boolean
@@ -100,7 +100,7 @@ export interface ContactCreate {
 export interface ContactUpdate {
   first_name?: string
   last_name?: string
-  email?: string
+  email?: string | null
   phone?: string | null
   role?: string | null
   is_primary?: boolean

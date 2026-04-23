@@ -92,8 +92,8 @@ export default function OrganizationsPage() {
 
       {/* Filter */}
       <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm font-medium">Filtrer par type :</label>
-        <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(0) }}
+        <label htmlFor="filter-org-type" className="text-sm font-medium">Filtrer par type :</label>
+        <select id="filter-org-type" name="filter-org-type" value={filterType} onChange={e => { setFilterType(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Tous</option>
           {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -112,21 +112,21 @@ export default function OrganizationsPage() {
         <CardContent>
           <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
-              <label className="text-sm font-medium">Nom <span className="text-destructive">*</span></label>
-              <input value={newName} onChange={e => setNewName(e.target.value)} required maxLength={255}
+              <label htmlFor="new-org-name" className="text-sm font-medium">Nom <span className="text-destructive">*</span></label>
+              <input id="new-org-name" name="name" value={newName} onChange={e => setNewName(e.target.value)} required maxLength={255}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="w-48 space-y-1">
-              <label className="text-sm font-medium">Type <span className="text-destructive">*</span></label>
-              <select value={newTypeId} onChange={e => setNewTypeId(e.target.value)} required
+              <label htmlFor="new-org-type" className="text-sm font-medium">Type <span className="text-destructive">*</span></label>
+              <select id="new-org-type" name="organization_type_id" value={newTypeId} onChange={e => setNewTypeId(e.target.value)} required
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Choisir…</option>
                 {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
             <div className="flex-1 space-y-1">
-              <label className="text-sm font-medium">E-mail</label>
-              <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} maxLength={255}
+              <label htmlFor="new-org-email" className="text-sm font-medium">E-mail</label>
+              <input id="new-org-email" name="email" type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} maxLength={255}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <Button type="submit" disabled={creating || !newName.trim() || !newTypeId}>{creating ? "Création…" : "Créer"}</Button>
@@ -144,18 +144,18 @@ export default function OrganizationsPage() {
           <Card key={item.id} className="border-primary/40">
             <CardContent className="pt-4 space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
-                <input value={editState.name} onChange={e => setEditState(p => p && { ...p, name: e.target.value })} placeholder="Nom" maxLength={255}
+                <input name="name" value={editState.name} onChange={e => setEditState(p => p && { ...p, name: e.target.value })} placeholder="Nom" maxLength={255}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <select value={editState.organization_type_id} onChange={e => setEditState(p => p && { ...p, organization_type_id: e.target.value })}
+                <select name="organization_type_id" value={editState.organization_type_id} onChange={e => setEditState(p => p && { ...p, organization_type_id: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                   {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
-                <input value={editState.email} onChange={e => setEditState(p => p && { ...p, email: e.target.value })} placeholder="E-mail"
+                <input name="email" type="email" value={editState.email} onChange={e => setEditState(p => p && { ...p, email: e.target.value })} placeholder="E-mail"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input value={editState.phone} onChange={e => setEditState(p => p && { ...p, phone: e.target.value })} placeholder="Téléphone"
+                <input name="phone" type="tel" value={editState.phone} onChange={e => setEditState(p => p && { ...p, phone: e.target.value })} placeholder="Téléphone"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input value={editState.address} onChange={e => setEditState(p => p && { ...p, address: e.target.value })} placeholder="Adresse" className="col-span-full w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <textarea value={editState.notes} onChange={e => setEditState(p => p && { ...p, notes: e.target.value })} placeholder="Notes" rows={2} className="col-span-full w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                <input name="address" value={editState.address} onChange={e => setEditState(p => p && { ...p, address: e.target.value })} placeholder="Adresse" className="col-span-full w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                <textarea name="notes" value={editState.notes} onChange={e => setEditState(p => p && { ...p, notes: e.target.value })} placeholder="Notes" rows={2} className="col-span-full w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => handleSave(item.id)} disabled={saving}><Save className="h-3 w-3 mr-1" />{saving ? "…" : "Enregistrer"}</Button>
@@ -168,7 +168,11 @@ export default function OrganizationsPage() {
             <CardContent className="pt-4 flex items-center justify-between">
               <div>
                 <p className="font-medium">{item.name}</p>
-                <p className="text-xs text-muted-foreground">{typeName(item.organization_type_id ?? "")} {item.email ? `· ${item.email}` : ""}</p>
+                <p className="text-xs text-muted-foreground">
+                  {typeName(item.organization_type_id ?? "")}
+                  {item.phone ? ` · ${item.phone}` : ""}
+                  {item.email ? ` · ${item.email}` : ""}
+                </p>
               </div>
               <div className="flex gap-1">
                 <Button size="icon" variant="ghost" onClick={() => setEditState({ id: item.id, name: item.name, organization_type_id: item.organization_type_id ?? "", address: item.address ?? "", phone: item.phone ?? "", email: item.email ?? "", notes: item.notes ?? "" })}><Pencil className="h-4 w-4" /></Button>

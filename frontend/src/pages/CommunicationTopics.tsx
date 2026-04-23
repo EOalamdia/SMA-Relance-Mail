@@ -123,14 +123,23 @@ export default function CommunicationTopicsPage() {
         <Card>
           <CardHeader><CardTitle className="text-lg">Nouveau sujet</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <input placeholder="Code (ex : rappels_formation)" value={formCode} onChange={e => setFormCode(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-            <input placeholder="Libellé" value={formLabel} onChange={e => setFormLabel(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-            <input placeholder="Description (optionnel)" value={formDescription} onChange={e => setFormDescription(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <div className="space-y-1">
+              <label htmlFor="new-topic-code" className="text-sm font-medium">Code <span className="text-destructive">*</span></label>
+              <input id="new-topic-code" name="code" placeholder="Code (ex : rappels_formation)" value={formCode} onChange={e => setFormCode(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="new-topic-label" className="text-sm font-medium">Libellé <span className="text-destructive">*</span></label>
+              <input id="new-topic-label" name="label" placeholder="Libellé" value={formLabel} onChange={e => setFormLabel(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="new-topic-description" className="text-sm font-medium">Description</label>
+              <input id="new-topic-description" name="description" placeholder="Description (optionnel)" value={formDescription} onChange={e => setFormDescription(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={formUnsubscribable} onChange={e => setFormUnsubscribable(e.target.checked)} />
+              <input type="checkbox" name="is_unsubscribable" checked={formUnsubscribable} onChange={e => setFormUnsubscribable(e.target.checked)} />
               Désinscriptible
             </label>
             <div className="flex gap-2">
@@ -157,12 +166,18 @@ export default function CommunicationTopicsPage() {
             <CardContent className="pt-4">
               {editing === item.id ? (
                 <div className="space-y-3">
-                  <input value={formLabel} onChange={e => setFormLabel(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-                  <input value={formDescription} onChange={e => setFormDescription(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                  <div className="space-y-1">
+                    <label htmlFor="edit-topic-label" className="text-sm font-medium">Libellé</label>
+                    <input id="edit-topic-label" name="label" value={formLabel} onChange={e => setFormLabel(e.target.value)}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="edit-topic-description" className="text-sm font-medium">Description</label>
+                    <input id="edit-topic-description" name="description" value={formDescription} onChange={e => setFormDescription(e.target.value)}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                  </div>
                   <label className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={formUnsubscribable} onChange={e => setFormUnsubscribable(e.target.checked)} />
+                    <input type="checkbox" name="is_unsubscribable" checked={formUnsubscribable} onChange={e => setFormUnsubscribable(e.target.checked)} />
                     Désinscriptible
                   </label>
                   <div className="flex gap-2">

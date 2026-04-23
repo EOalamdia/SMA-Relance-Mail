@@ -26,6 +26,21 @@ def _table():
     return get_schema_table(_SCHEMA, _TABLE)
 
 
+def _normalize_optional_text(value: str | None) -> str | None:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    return cleaned or None
+
+
+def _ensure_contact_channel(email: str | None, phone: str | None) -> None:
+    if not email and not phone:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Renseignez au moins un e-mail ou un telephone.",
+        )
+
+
 @router.get("", response_model=ContactListResponse)
 def list_contacts(
     organization_id: UUID | None = Query(None, description="Filtrer par organisation"),
@@ -59,6 +74,10 @@ def get_contact(item_id: UUID, _user: UserContext = Depends(get_current_user)):
 def create_contact(payload: ContactCreate, _user: UserContext = Depends(get_current_user)):
     data = payload.model_dump()
     data["organization_id"] = str(data["organization_id"])
+    data["email"] = _normalize_optional_text(data.get("email"))
+    data["phone"] = _normalize_optional_text(data.get("phone"))
+    data["role"] = _normalize_optional_text(data.get("role"))
+    _ensure_contact_channel(data.get("email"), data.get("phone"))
 
     # If marking as primary, unmark existing primary for this org
     if data.get("is_primary"):
@@ -74,16 +93,28 @@ def create_contact(payload: ContactCreate, _user: UserContext = Depends(get_curr
 
 @router.patch("/{item_id}", response_model=ContactOut)
 def update_contact(item_id: UUID, payload: ContactUpdate, _user: UserContext = Depends(get_current_user)):
-    changes = payload.model_dump(exclude_none=True)
+    changes = payload.model_dump(exclude_unset=True)
     if not changes:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Aucun champ a mettre a jour.")
-    exists = _table().select("id, organization_id").eq("id", str(item_id)).is_("archived_at", "null").limit(1).execute()
+    exists = _table().select("id, organization_id, email, phone").eq("id", str(item_id)).is_("archived_at", "null").limit(1).execute()
     if not exists.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact non trouve.")
 
+    if "email" in changes:
+        changes["email"] = _normalize_optional_text(changes.get("email"))
+    if "phone" in changes:
+        changes["phone"] = _normalize_optional_text(changes.get("phone"))
+    if "role" in changes:
+        changes["role"] = _normalize_optional_text(changes.get("role"))
+
+    current = exists.data[0]
+    next_email = changes["email"] if "email" in changes else _normalize_optional_text(current.get("email"))
+    next_phone = changes["phone"] if "phone" in changes else _normalize_optional_text(current.get("phone"))
+    _ensure_contact_channel(next_email, next_phone)
+
     # If setting as primary, unmark existing primary for this org
     if changes.get("is_primary"):
-        org_id = exists.data[0]["organization_id"]
+        org_id = current["organization_id"]
         _table().update({"is_primary": False}).eq(
             "organization_id", org_id
         ).eq("is_primary", True).neq("id", str(item_id)).execute()

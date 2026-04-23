@@ -12,7 +12,8 @@ class ContactOut(BaseModel):
     organization_id: UUID
     first_name: str
     last_name: str
-    email: str
+    email: str | None = None
+    phone: str | None = None
     role: str | None = None
     is_primary: bool
     is_active: bool
@@ -32,7 +33,8 @@ class ContactCreate(BaseModel):
     organization_id: UUID
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
-    email: str = Field(..., min_length=3, max_length=255)
+    email: str | None = Field(None, max_length=255)
+    phone: str | None = Field(None, max_length=50)
     role: str | None = Field(None, max_length=255)
     is_primary: bool = False
 
@@ -40,7 +42,8 @@ class ContactCreate(BaseModel):
 class ContactUpdate(BaseModel):
     first_name: str | None = Field(None, min_length=1, max_length=100)
     last_name: str | None = Field(None, min_length=1, max_length=100)
-    email: str | None = Field(None, min_length=3, max_length=255)
+    email: str | None = Field(None, max_length=255)
+    phone: str | None = Field(None, max_length=50)
     role: str | None = Field(None, max_length=255)
     is_primary: bool | None = None
     is_active: bool | None = None

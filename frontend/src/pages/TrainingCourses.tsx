@@ -99,18 +99,18 @@ export default function TrainingCoursesPage() {
         <CardContent>
           <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="w-32 space-y-1">
-              <label className="text-sm font-medium">Code <span className="text-destructive">*</span></label>
-              <input value={newCode} onChange={e => setNewCode(e.target.value)} required maxLength={50} placeholder="SST"
+              <label htmlFor="new-course-code" className="text-sm font-medium">Code <span className="text-destructive">*</span></label>
+              <input id="new-course-code" name="code" value={newCode} onChange={e => setNewCode(e.target.value)} required maxLength={50} placeholder="SST"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="flex-1 space-y-1">
-              <label className="text-sm font-medium">Libellé <span className="text-destructive">*</span></label>
-              <input value={newTitle} onChange={e => setNewTitle(e.target.value)} required maxLength={255}
+              <label htmlFor="new-course-title" className="text-sm font-medium">Libellé <span className="text-destructive">*</span></label>
+              <input id="new-course-title" name="title" value={newTitle} onChange={e => setNewTitle(e.target.value)} required maxLength={255}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="w-36 space-y-1">
-              <label className="text-sm font-medium">Validité de la formation en mois</label>
-              <input type="number" min={0} value={newValidity} onChange={e => setNewValidity(e.target.value)} placeholder="24"
+              <label htmlFor="new-course-validity" className="text-sm font-medium">Validité de la formation en mois</label>
+              <input id="new-course-validity" name="reminder_frequency_months" type="number" min={0} value={newValidity} onChange={e => setNewValidity(e.target.value)} placeholder="24"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <Button type="submit" disabled={creating || !newCode.trim() || !newTitle.trim()}>{creating ? "…" : "Créer"}</Button>
@@ -132,12 +132,12 @@ export default function TrainingCoursesPage() {
           <Card key={item.id} className="border-primary/40">
             <CardContent className="pt-4 space-y-3">
               <div className="grid gap-3 sm:grid-cols-3">
-                <input value={editState.code} onChange={e => setEditState(p => p && { ...p, code: e.target.value })} placeholder="Code"
+                <input name="code" value={editState.code} onChange={e => setEditState(p => p && { ...p, code: e.target.value })} placeholder="Code"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input value={editState.title} onChange={e => setEditState(p => p && { ...p, title: e.target.value })} placeholder="Libellé" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input type="number" min={0} value={editState.reminder_frequency_months} onChange={e => setEditState(p => p && { ...p, reminder_frequency_months: e.target.value })} placeholder="Validité de la formation en mois"
+                <input name="title" value={editState.title} onChange={e => setEditState(p => p && { ...p, title: e.target.value })} placeholder="Libellé" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                <input name="reminder_frequency_months" type="number" min={0} value={editState.reminder_frequency_months} onChange={e => setEditState(p => p && { ...p, reminder_frequency_months: e.target.value })} placeholder="Validité de la formation en mois"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!editState.reminder_disabled} onChange={e => setEditState(p => p && { ...p, reminder_disabled: !e.target.checked })} /> Relance activée</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="reminder_disabled" checked={!editState.reminder_disabled} onChange={e => setEditState(p => p && { ...p, reminder_disabled: !e.target.checked })} /> Relance activée</label>
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => handleSave(item.id)} disabled={saving}><Save className="h-3 w-3 mr-1" />{saving ? "…" : "Enregistrer"}</Button>

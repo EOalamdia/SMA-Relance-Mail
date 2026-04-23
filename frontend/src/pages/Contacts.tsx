@@ -26,6 +26,7 @@ export default function ContactsPage() {
   const [newFirst, setNewFirst] = useState("")
   const [newLast, setNewLast] = useState("")
   const [newEmail, setNewEmail] = useState("")
+  const [newPhone, setNewPhone] = useState("")
   const [newOrgId, setNewOrgId] = useState("")
   const [creating, setCreating] = useState(false)
   const [editState, setEditState] = useState<EditState | null>(null)
@@ -51,11 +52,20 @@ export default function ContactsPage() {
   function orgName(id: string) { return orgs.find(o => o.id === id)?.name ?? "—" }
 
   async function handleCreate(e: React.FormEvent) {
-    e.preventDefault(); if (!newFirst.trim() || !newLast.trim() || !newEmail.trim() || !newOrgId) return
+    e.preventDefault()
+    const email = newEmail.trim()
+    const phone = newPhone.trim()
+    if (!newFirst.trim() || !newLast.trim() || !newOrgId || (!email && !phone)) return
     setCreating(true)
     try {
-      const c = await contactsApi.create({ organization_id: newOrgId, first_name: newFirst.trim(), last_name: newLast.trim(), email: newEmail.trim() })
-      setItems(p => [c, ...p]); setNewFirst(""); setNewLast(""); setNewEmail("")
+      const c = await contactsApi.create({
+        organization_id: newOrgId,
+        first_name: newFirst.trim(),
+        last_name: newLast.trim(),
+        email: email || null,
+        phone: phone || null,
+      })
+      setItems(p => [c, ...p]); setNewFirst(""); setNewLast(""); setNewEmail(""); setNewPhone("")
     } catch (e) { alert(e instanceof Error ? e.message : "Erreur") }
     finally { setCreating(false) }
   }
@@ -67,11 +77,18 @@ export default function ContactsPage() {
   }
 
   async function handleSave(id: string) {
-    if (!editState) return; setSaving(true)
+    if (!editState) return
+    const email = editState.email.trim()
+    const phone = editState.phone.trim()
+    if (!email && !phone) {
+      alert("Renseignez au moins un e-mail ou un téléphone.")
+      return
+    }
+    setSaving(true)
     try {
       const u = await contactsApi.update(id, {
         first_name: editState.first_name.trim(), last_name: editState.last_name.trim(),
-        email: editState.email.trim(), phone: editState.phone.trim() || null,
+        email: email || null, phone: phone || null,
         role: editState.role.trim() || null, is_primary: editState.is_primary,
       })
       setItems(p => p.map(i => i.id === id ? u : i)); setEditState(null)
@@ -89,8 +106,8 @@ export default function ContactsPage() {
       </header>
 
       <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm font-medium">Organisme :</label>
-        <select value={filterOrg} onChange={e => { setFilterOrg(e.target.value); setPage(0) }}
+        <label htmlFor="filter-contact-org" className="text-sm font-medium">Organisme :</label>
+        <select id="filter-contact-org" name="filter-contact-org" value={filterOrg} onChange={e => { setFilterOrg(e.target.value); setPage(0) }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="">Tous</option>
           {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
@@ -106,32 +123,38 @@ export default function ContactsPage() {
         <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Plus className="h-4 w-4" /> Nouveau contact</CardTitle>
           <CardDescription>Ajouter un contact à un organisme.</CardDescription></CardHeader>
         <CardContent>
-          <form onSubmit={handleCreate} className="grid gap-3 sm:grid-cols-5 items-end">
+          <form onSubmit={handleCreate} className="grid gap-3 sm:grid-cols-3 items-end">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Prénom <span className="text-destructive">*</span></label>
-              <input value={newFirst} onChange={e => setNewFirst(e.target.value)} required maxLength={100}
+              <label htmlFor="new-contact-first" className="text-sm font-medium">Prénom <span className="text-destructive">*</span></label>
+              <input id="new-contact-first" name="first_name" value={newFirst} onChange={e => setNewFirst(e.target.value)} required maxLength={100}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Nom <span className="text-destructive">*</span></label>
-              <input value={newLast} onChange={e => setNewLast(e.target.value)} required maxLength={100}
+              <label htmlFor="new-contact-last" className="text-sm font-medium">Nom <span className="text-destructive">*</span></label>
+              <input id="new-contact-last" name="last_name" value={newLast} onChange={e => setNewLast(e.target.value)} required maxLength={100}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">E-mail <span className="text-destructive">*</span></label>
-              <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} required maxLength={255}
+              <label htmlFor="new-contact-email" className="text-sm font-medium">E-mail</label>
+              <input id="new-contact-email" name="email" type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} maxLength={255}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Organisme <span className="text-destructive">*</span></label>
-              <select value={newOrgId} onChange={e => setNewOrgId(e.target.value)} required
+              <label htmlFor="new-contact-phone" className="text-sm font-medium">Téléphone</label>
+              <input id="new-contact-phone" name="phone" type="tel" value={newPhone} onChange={e => setNewPhone(e.target.value)} maxLength={50}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="new-contact-org" className="text-sm font-medium">Organisme <span className="text-destructive">*</span></label>
+              <select id="new-contact-org" name="organization_id" value={newOrgId} onChange={e => setNewOrgId(e.target.value)} required
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Choisir…</option>
                 {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
               </select>
             </div>
-            <Button type="submit" disabled={creating}>{creating ? "…" : "Créer"}</Button>
+            <Button type="submit" disabled={creating || !newFirst.trim() || !newLast.trim() || !newOrgId || (!newEmail.trim() && !newPhone.trim())}>{creating ? "…" : "Créer"}</Button>
           </form>
+          <p className="mt-2 text-xs text-muted-foreground">Au moins un champ est requis: e-mail ou téléphone.</p>
         </CardContent>
       </Card>
 
@@ -144,17 +167,17 @@ export default function ContactsPage() {
           <Card key={item.id} className="border-primary/40">
             <CardContent className="pt-4 space-y-3">
               <div className="grid gap-3 sm:grid-cols-3">
-                <input value={editState.first_name} onChange={e => setEditState(p => p && { ...p, first_name: e.target.value })} placeholder="Prénom"
+                <input name="first_name" value={editState.first_name} onChange={e => setEditState(p => p && { ...p, first_name: e.target.value })} placeholder="Prénom"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input value={editState.last_name} onChange={e => setEditState(p => p && { ...p, last_name: e.target.value })} placeholder="Nom"
+                <input name="last_name" value={editState.last_name} onChange={e => setEditState(p => p && { ...p, last_name: e.target.value })} placeholder="Nom"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input type="email" value={editState.email} onChange={e => setEditState(p => p && { ...p, email: e.target.value })} placeholder="E-mail"
+                <input type="email" name="email" value={editState.email} onChange={e => setEditState(p => p && { ...p, email: e.target.value })} placeholder="E-mail"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input value={editState.phone} onChange={e => setEditState(p => p && { ...p, phone: e.target.value })} placeholder="Téléphone"
+                <input name="phone" type="tel" value={editState.phone} onChange={e => setEditState(p => p && { ...p, phone: e.target.value })} placeholder="Téléphone"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <input value={editState.role} onChange={e => setEditState(p => p && { ...p, role: e.target.value })} placeholder="Rôle"
+                <input name="role" value={editState.role} onChange={e => setEditState(p => p && { ...p, role: e.target.value })} placeholder="Rôle"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editState.is_primary} onChange={e => setEditState(p => p && { ...p, is_primary: e.target.checked })} /> Contact principal</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="is_primary" checked={editState.is_primary} onChange={e => setEditState(p => p && { ...p, is_primary: e.target.checked })} /> Contact principal</label>
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => handleSave(item.id)} disabled={saving}><Save className="h-3 w-3 mr-1" />{saving ? "…" : "Enregistrer"}</Button>
@@ -170,10 +193,15 @@ export default function ContactsPage() {
                   {item.is_primary && <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />}
                   {item.first_name} {item.last_name}
                 </p>
-                <p className="text-xs text-muted-foreground">{orgName(item.organization_id)} · {item.email}{item.role ? ` · ${item.role}` : ""}</p>
+                <p className="text-xs text-muted-foreground">
+                  {orgName(item.organization_id)}
+                  {item.phone ? ` · ${item.phone}` : ""}
+                  {item.email ? ` · ${item.email}` : ""}
+                  {item.role ? ` · ${item.role}` : ""}
+                </p>
               </div>
               <div className="flex gap-1">
-                <Button size="icon" variant="ghost" onClick={() => setEditState({ id: item.id, first_name: item.first_name, last_name: item.last_name, email: item.email, phone: item.phone ?? "", role: item.role ?? "", is_primary: item.is_primary })}><Pencil className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => setEditState({ id: item.id, first_name: item.first_name, last_name: item.last_name, email: item.email ?? "", phone: item.phone ?? "", role: item.role ?? "", is_primary: item.is_primary })}><Pencil className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4" /></Button>
               </div>
             </CardContent>

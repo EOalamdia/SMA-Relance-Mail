@@ -81,13 +81,13 @@ export default function OrganizationTypesPage() {
         <CardContent>
           <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
-              <label className="text-sm font-medium">Nom <span className="text-destructive">*</span></label>
-              <input value={newName} onChange={e => setNewName(e.target.value)} required maxLength={255}
+              <label htmlFor="new-orgtype-name" className="text-sm font-medium">Nom <span className="text-destructive">*</span></label>
+              <input id="new-orgtype-name" name="name" value={newName} onChange={e => setNewName(e.target.value)} required maxLength={255}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="flex-1 space-y-1">
-              <label className="text-sm font-medium">Description</label>
-              <input value={newDesc} onChange={e => setNewDesc(e.target.value)} maxLength={2000}
+              <label htmlFor="new-orgtype-desc" className="text-sm font-medium">Description</label>
+              <input id="new-orgtype-desc" name="description" value={newDesc} onChange={e => setNewDesc(e.target.value)} maxLength={2000}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <Button type="submit" disabled={creating || !newName.trim()}>{creating ? "Création…" : "Créer"}</Button>
@@ -108,9 +108,9 @@ export default function OrganizationTypesPage() {
         {items.map(item => editState?.id === item.id ? (
           <Card key={item.id} className="border-primary/40">
             <CardContent className="pt-4 space-y-3">
-              <input value={editState.name} onChange={e => setEditState(p => p && { ...p, name: e.target.value })} maxLength={255}
+              <input name="name" value={editState.name} onChange={e => setEditState(p => p && { ...p, name: e.target.value })} maxLength={255}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-              <input value={editState.description} onChange={e => setEditState(p => p && { ...p, description: e.target.value })} maxLength={2000}
+              <input name="description" value={editState.description} onChange={e => setEditState(p => p && { ...p, description: e.target.value })} maxLength={2000}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => handleSave(item.id)} disabled={saving}><Save className="h-3 w-3 mr-1" />{saving ? "…" : "Enregistrer"}</Button>
